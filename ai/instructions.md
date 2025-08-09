@@ -2,7 +2,7 @@
 
 This file provides guidance to coding agents like `claude` or `gemini` when working with code in this repository.
 
-**Note:** CLAUDE.md, GEMINI.md, and AGENTS.md are symlinks to this file. Always edit .ai/instructions.md directly.
+**Note:** CLAUDE.md, GEMINI.md, and AGENTS.md are symlinks to this file. Always edit ai/instructions.md directly.
 
 ## Project Information
 
