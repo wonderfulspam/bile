@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wolfram Weimers Gender-Verbot | TAZ Bilingual</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Georgia, serif;
+            line-height: 1.6;
+            color: #333;
+            background: #fff;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            border-bottom: 3px solid #d70000;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            font-size: 48px;
+            font-weight: bold;
+            color: #d70000;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        
+        h1 {
+            font-size: 32px;
+            line-height: 1.2;
+            margin-bottom: 20px;
+            color: #000;
+        }
+        
+        .subtitle {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+        
+        .lang-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #d70000;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+            z-index: 1000;
+        }
+        
+        .lang-toggle:hover {
+            background: #b30000;
+        }
+        
+        .content {
+            font-size: 18px;
+            line-height: 1.8;
+        }
+        
+        .content p {
+            margin-bottom: 20px;
+        }
+        
+        .slang {
+            color: #d70000;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: underline;
+            text-decoration-style: dotted;
+            text-underline-offset: 2px;
+            position: relative;
+        }
+        
+        .slang:hover {
+            text-decoration-style: solid;
+        }
+        
+        .translation {
+            color: #666;
+            font-style: italic;
+        }
+        
+        .tooltip {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: normal;
+            font-style: normal;
+            white-space: nowrap;
+            max-width: 300px;
+            white-space: normal;
+            z-index: 1000;
+            margin-bottom: 5px;
+        }
+        
+        .tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #333;
+        }
+        
+        .slang.active .tooltip {
+            display: block;
+        }
+        
+        .english-version {
+            display: none;
+        }
+        
+        .section-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #000;
+        }
+        
+        .author-info {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ccc;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .quote {
+            border-left: 4px solid #d70000;
+            padding-left: 20px;
+            margin: 20px 0;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <button class="lang-toggle" onclick="toggleLanguage()">Switch to English</button>
+    
+    <header>
+        <div class="logo">taz</div>
+        <h1 class="title-german">Wolfram Weimers Gender-Verbot: Warum ich mich aus meiner Nationalsprache verabschiede</h1>
+        <h1 class="title-english" style="display: none;">Wolfram Weimer's Gender Ban: Why I'm Withdrawing from My National Language</h1>
+        <div class="subtitle-german">Kulturstaatsminister und Feuilletonisten laufen Sturm gegen das Gendern und erklären die Gemeinheit zur Staatsräson. Unser Autor sagt: Es reicht.</div>
+        <div class="subtitle-english" style="display: none;">Culture ministers and feuilletonists are up in arms against gender-inclusive language and declare meanness as state policy. Our author says: Enough is enough.</div>
+    </header>
+    
+    <div class="content german-version">
+        <p><span class="slang" onclick="toggleTooltip(this)">Wutt sse fugging fukk?<span class="tooltip">Eine absichtlich falsch geschriebene Version von "What the fucking fuck?" - zeigt extreme Verärgerung</span></span> <span class="translation">(What the fucking fuck?)</span> Wer glauben <span class="slang" onclick="toggleTooltip(this)">Fazfaxenmänner<span class="tooltip">FAZ = Frankfurter Allgemeine Zeitung, eine konservative deutsche Zeitung. "Faxenmänner" = Clowns oder Kasper</span></span> <span class="translation">(FAZ clown men)</span>, dass sie sind? Was erlauben Kulturstaatsminister sich? Kulturstaatsminister und <span class="slang" onclick="toggleTooltip(this)">Fazfaxenmänner<span class="tooltip">FAZ = Frankfurter Allgemeine Zeitung, eine konservative deutsche Zeitung. "Faxenmänner" = Clowns oder Kasper</span></span> <span class="translation">(FAZ clown men)</span> haben in <span class="slang" onclick="toggleTooltip(this)">Schtaaaaat untt Gesöllschaffft<span class="tooltip">Übertriebene Aussprache von "Staat und Gesellschaft" - macht sich über pompöse Amtssprache lustig</span></span> <span class="translation">(state and society - exaggerated pronunciation)</span> ein glasklar definiertes Loch zum Männermachtausüben. Jeder eins. Wenn sie kleinlich genug sind, passen auch beide in ein Loch rein. Und ich bin mir eigentlich ganz sicher, dass diese beiden kleinlich genug für ein Loch sind. Jetzt wollen sie mehr.</p>
+        
+        <p>Zu behaupten, Frauen seien mitgemeint, wenn sie nicht angesprochen werden, ist grundsätzlich dumm und gemein, aber noch im gesellschaftlich akzeptierten Rahmen. Aber die Gemeinheit zur <span class="slang" onclick="toggleTooltip(this)">Schtaaaatsräsonk<span class="tooltip">Spöttische Version von "Staatsräson" (Staatsvernunft) - wichtige politische Grundsätze eines Staates</span></span> <span class="translation">(state reason - mockingly exaggerated)</span> zu erklären und mit „Schönheit" zu begründen – <span class="slang" onclick="toggleTooltip(this)">wutt sse fugging fukk?<span class="tooltip">Eine absichtlich falsch geschriebene Version von "What the fucking fuck?" - zeigt extreme Verärgerung</span></span> <span class="translation">(what the fucking fuck?)</span> Das ist Sprachinbesitznahme von oben. Staatlicher Sprachraub. Anschmiegsame feuilletonistische Schönheitskaperung in staatlichem Interesse. Ein Angriff auf die offene Gesellschaft. Also das neue Normal.</p>
+        
+        <p>Früher war mir Deutschland egal, und jetzt glaube ich plötzlich, dass ich mein Land vor Kulturstaatsministern und <span class="slang" onclick="toggleTooltip(this)">Fazfaxenmännern<span class="tooltip">FAZ = Frankfurter Allgemeine Zeitung, eine konservative deutsche Zeitung. "Faxenmänner" = Clowns oder Kasper</span></span> <span class="translation">(FAZ clown men)</span> schützen muss, vor <span class="slang" onclick="toggleTooltip(this)">Katzbuckelkanzlern<span class="tooltip">Katzbuckeln = unterwürfig sein, sich einschmeicheln. Ein Kanzler, der vor anderen buckelt</span></span> <span class="translation">(kowtowing chancellors)</span> und <span class="slang" onclick="toggleTooltip(this)">Glockenrockklöcknerinnen<span class="tooltip">Wortspiel mit Julia Klöckner (CDU-Politikerin) und Glockenrock (altmodischer weiter Rock)</span></span> <span class="translation">(bell-skirt Klöckners)</span>, weil sie einfach zu <span class="slang" onclick="toggleTooltip(this)">peinlo<span class="tooltip">Jugendsprache-Abkürzung für "peinlich"</span></span> <span class="translation">(embarrassing - slang abbreviation)</span> sind. Die beiden haben ein Nationalgefühl aus mir herausgekitzelt, weshalb ich mich jetzt vor mir selbst ekle, <span class="slang" onclick="toggleTooltip(this)">iiiiih!<span class="tooltip">Ausruf des Ekels</span></span> <span class="translation">(ewww!)</span></p>
+        
+        <div class="section-header">Mein Land hat das Peinlichsein gewählt</div>
+        
+        <p>Aber ich werde mein Land nicht verteidigen. Es hat das Peinlichsein frei gewählt und erfindet sich gerade neu, als Nation aus <span class="slang" onclick="toggleTooltip(this)">Cringe<span class="tooltip">Englisches Wort für Fremdscham - wenn man sich für andere schämt</span></span> <span class="translation">(cringe)</span> und Gewalt gegen Schwächere. Auf <span class="slang" onclick="toggleTooltip(this)">kulturstaatssinistere<span class="tooltip">Wortschöpfung aus "Kulturstaatsminister" + "sinister" (düster, unheilvoll)</span></span> <span class="translation">(culture-state-sinister)</span> Weise müssen Begriffe wie Seele und Schönheit in Blut und Boden gepflanzt werden, man muss vor alten Ölschinken posieren und strahlend zu ihnen aufblicken. Was als deutsche Kultur gelten will, muss einen Goldrahmen aus Muff nachweisen.</p>
+        
+        <div class="quote">
+            <p>Auf <span class="slang" onclick="toggleTooltip(this)">kulturstaatssinistere<span class="tooltip">Wortschöpfung aus "Kulturstaatsminister" + "sinister" (düster, unheilvoll)</span></span> <span class="translation">(culture-state-sinister)</span> Weise müssen Begriffe wie Seele und Schönheit in Blut und Boden gepflanzt werden, man muss vor alten Ölschinken posieren und strahlend zu ihnen aufblicken</p>
+        </div>
+        
+        <p>Deutsche Sprache und ihre Schönheit, wie <span class="slang" onclick="toggleTooltip(this)">Fazfaxenmänner<span class="tooltip">FAZ = Frankfurter Allgemeine Zeitung, eine konservative deutsche Zeitung. "Faxenmänner" = Clowns oder Kasper</span></span> <span class="translation">(FAZ clown men)</span> und Kulturstaatsminister sie konstruieren, ist Arbeit an der Restauration einer uralten Ekelwelt. Männer, denen es nie um eine andere Menschenwürde ging als die eigene, wollen endlich ihre Allmachtsfantasien wahr werden lassen. Und überall reiten irr juchzende Großfeuilletonisten auf dem <span class="slang" onclick="toggleTooltip(this)">Vibe-Shift<span class="tooltip">Englisch für Stimmungswandel - hier: der aktuelle Rechtsruck in der Gesellschaft</span></span> <span class="translation">(vibe shift)</span> rund um den Thingplatz.</p>
+        
+        <p>Ihr könnt mich <span class="slang" onclick="toggleTooltip(this)">bayerisch-schulkreuzweise<span class="tooltip">Derbe Redewendung - Anspielung auf Bayerns Kruzifixpflicht in Schulen. Bedeutet so viel wie "am Arsch lecken"</span></span> <span class="translation">(Bavarian-school-cross-style - vulgar expression)</span>. Ich mache nicht mehr mit! Hiermit trete ich offiziell aus meiner Nationalsprache aus. Ab jetzt bin ich sprachlich staatenlos und spreche und schreibe nur noch meine eigene Sprache – alles meins, alle Worte, alle Regeln, Zutritt für Staatsräson verboten. Ich bin Sprachregierung, Sprachpolizei und höchstes Sprachgericht.</p>
+        
+        <div class="section-header">Meine Sprache gehört allen</div>
+        
+        <p>So höret nun also mein Gesetz: Meine Sprache gehört allen und darf nie dafür verwendet werden, andere Menschen auszuschließen oder zu erniedrigen. Sie ist ein Spiel, das in Freiheit gespielt wird, mit so vielen Gendersternchen oder -doppelpunkten, wie ihr wollt. In meiner Sprache gibt es keine Sprachschönheit, die nicht aus dieser Freiheit entsteht, und ich schenke sie der überstaatlichen Gemeinschaft.</p>
+        
+        <p>Wolfram Weimer, Jürgen Kaube und allen anderen <span class="slang" onclick="toggleTooltip(this)">Staatssprach-Allmachtsmännern<span class="tooltip">Männer, die staatliche Macht über die Sprache ausüben wollen</span></span> <span class="translation">(state-language-omnipotence-men)</span> aber sage ich: Husch zurück in euer Loch! Euch verbiete ich alle Worte meiner Sprache, bis ans Ende aller Tage.</p>
+    </div>
+    
+    <div class="content english-version">
+        <p><span class="slang" onclick="toggleTooltip(this)">What the fucking fuck?<span class="tooltip">An intentionally misspelled version of this English phrase showing extreme frustration</span></span> <span class="translation">(Wutt sse fugging fukk?)</span> Who do these <span class="slang" onclick="toggleTooltip(this)">FAZ clown men<span class="tooltip">FAZ = Frankfurter Allgemeine Zeitung, a conservative German newspaper. Combined with "clown men" to mock their writers</span></span> <span class="translation">(Fazfaxenmänner)</span> think they are? What do culture ministers think they're doing? Culture ministers and <span class="slang" onclick="toggleTooltip(this)">FAZ clown men<span class="tooltip">FAZ = Frankfurter Allgemeine Zeitung, a conservative German newspaper. Combined with "clown men" to mock their writers</span></span> <span class="translation">(Fazfaxenmänner)</span> have a clearly defined hole in <span class="slang" onclick="toggleTooltip(this)">state and society<span class="tooltip">Exaggerated pronunciation mocking pompous bureaucratic language</span></span> <span class="translation">(Schtaaaaat untt Gesöllschaffft)</span> for exercising male power. One each. If they're petty enough, both can fit in one hole. And I'm actually quite sure that these two are petty enough for one hole. Now they want more.</p>
+        
+        <p>To claim that women are included when they're not being addressed is fundamentally stupid and mean, but still within the socially accepted framework. But to declare meanness as <span class="slang" onclick="toggleTooltip(this)">state reason<span class="tooltip">Mockingly exaggerated version of "Staatsräson" (reason of state) - fundamental political principles</span></span> <span class="translation">(Schtaaaatsräsonk)</span> and justify it with "beauty" – <span class="slang" onclick="toggleTooltip(this)">what the fucking fuck?<span class="tooltip">An intentionally misspelled version showing extreme frustration</span></span> <span class="translation">(wutt sse fugging fukk?)</span> This is linguistic appropriation from above. State language theft. Cozy feuilletonistic beauty hijacking in state interest. An attack on open society. So the new normal.</p>
+        
+        <p>Germany used to not matter to me, and now I suddenly believe I have to protect my country from culture ministers and <span class="slang" onclick="toggleTooltip(this)">FAZ clown men<span class="tooltip">FAZ = Frankfurter Allgemeine Zeitung, a conservative German newspaper. Combined with "clown men" to mock their writers</span></span> <span class="translation">(Fazfaxenmännern)</span>, from <span class="slang" onclick="toggleTooltip(this)">kowtowing chancellors<span class="tooltip">"Katzbuckeln" = to be servile, to bow and scrape. Chancellors who grovel before others</span></span> <span class="translation">(Katzbuckelkanzlern)</span> and <span class="slang" onclick="toggleTooltip(this)">bell-skirt Klöckners<span class="tooltip">Wordplay on Julia Klöckner (CDU politician) and "Glockenrock" (old-fashioned bell-shaped skirt)</span></span> <span class="translation">(Glockenrockklöcknerinnen)</span>, because they're simply too <span class="slang" onclick="toggleTooltip(this)">embarrassing<span class="tooltip">Youth slang abbreviation of "peinlich" (embarrassing)</span></span> <span class="translation">(peinlo)</span>. The two of them have tickled a national feeling out of me, which is why I now disgust myself, <span class="slang" onclick="toggleTooltip(this)">ewww!<span class="tooltip">Expression of disgust</span></span> <span class="translation">(iiiiih!)</span></p>
+        
+        <div class="section-header">My Country Has Chosen Embarrassment</div>
+        
+        <p>But I won't defend my country. It has freely chosen embarrassment and is reinventing itself as a nation of <span class="slang" onclick="toggleTooltip(this)">cringe<span class="tooltip">English word for secondhand embarrassment - being embarrassed for others</span></span> <span class="translation">(Cringe)</span> and violence against the weak. In a <span class="slang" onclick="toggleTooltip(this)">culture-state-sinister<span class="tooltip">Portmanteau of "Kulturstaatsminister" (culture minister) + "sinister" (dark, ominous)</span></span> <span class="translation">(kulturstaatssinistere)</span> way, concepts like soul and beauty must be planted in blood and soil, one must pose in front of old oil paintings and look up at them radiantly. What wants to count as German culture must show a golden frame of mustiness.</p>
+        
+        <div class="quote">
+            <p>In a <span class="slang" onclick="toggleTooltip(this)">culture-state-sinister<span class="tooltip">Portmanteau of "Kulturstaatsminister" (culture minister) + "sinister" (dark, ominous)</span></span> <span class="translation">(kulturstaatssinistere)</span> way, concepts like soul and beauty must be planted in blood and soil, one must pose in front of old oil paintings and look up at them radiantly</p>
+        </div>
+        
+        <p>German language and its beauty, as <span class="slang" onclick="toggleTooltip(this)">FAZ clown men<span class="tooltip">FAZ = Frankfurter Allgemeine Zeitung, a conservative German newspaper. Combined with "clown men" to mock their writers</span></span> <span class="translation">(Fazfaxenmänner)</span> and culture ministers construct it, is work on the restoration of an ancient world of disgust. Men who never cared about any human dignity but their own finally want to make their omnipotence fantasies come true. And everywhere, crazily cheering major feuilletonists ride the <span class="slang" onclick="toggleTooltip(this)">vibe shift<span class="tooltip">English term for mood change - here referring to society's current rightward shift</span></span> <span class="translation">(Vibe-Shift)</span> around the Thing place.</p>
+        
+        <p>You can kiss my <span class="slang" onclick="toggleTooltip(this)">Bavarian-school-cross ass<span class="tooltip">Crude expression referring to Bavaria's requirement for crucifixes in schools. Essentially means "kiss my ass"</span></span> <span class="translation">(bayerisch-schulkreuzweise)</span>. I'm not playing along anymore! I hereby officially resign from my national language. From now on I'm linguistically stateless and speak and write only my own language – all mine, all words, all rules, entry forbidden for state reason. I am language government, language police and highest language court.</p>
+        
+        <div class="section-header">My Language Belongs to Everyone</div>
+        
+        <p>So hear now my law: My language belongs to everyone and may never be used to exclude or humiliate other people. It is a game played in freedom, with as many gender asterisks or colons as you want. In my language there is no linguistic beauty that doesn't arise from this freedom, and I give it to the supranational community.</p>
+        
+        <p>But to Wolfram Weimer, Jürgen Kaube and all other <span class="slang" onclick="toggleTooltip(this)">state-language-omnipotence-men<span class="tooltip">Men who want to exercise state power over language</span></span> <span class="translation">(Staatssprach-Allmachtsmännern)</span> I say: Shoo back into your hole! I forbid you all words of my language, until the end of all days.</p>
+    </div> language there is no linguistic beauty that doesn't arise from this freedom, and I give it to the supranational community.</p>
+        
+        <p>But to Wolfram Weimer, Jürgen Kaube and all other <span class="slang">state-language-omnipotence-men</span> <span class="translation">(Staatssprach-Allmachtsmännern)</span> I say: Shoo back into your hole! I forbid you all words of my language, until the end of all days.</p>
+    </div>
+    
+    <div class="author-info">
+        <p>Original article from taz.de</p>
+        <p>Translation preserves German slang terms with English explanations in parentheses</p>
+    </div>
+    
+    <script>
+        let isGerman = true;
+        
+        function toggleLanguage() {
+            const germanVersion = document.querySelector('.german-version');
+            const englishVersion = document.querySelector('.english-version');
+            const toggleButton = document.querySelector('.lang-toggle');
+            const titleGerman = document.querySelector('.title-german');
+            const titleEnglish = document.querySelector('.title-english');
+            const subtitleGerman = document.querySelector('.subtitle-german');
+            const subtitleEnglish = document.querySelector('.subtitle-english');
+            
+            if (isGerman) {
+                germanVersion.style.display = 'none';
+                englishVersion.style.display = 'block';
+                titleGerman.style.display = 'none';
+                titleEnglish.style.display = 'block';
+                subtitleGerman.style.display = 'none';
+                subtitleEnglish.style.display = 'block';
+                toggleButton.textContent = 'Switch to German';
+                document.documentElement.lang = 'en';
+            } else {
+                germanVersion.style.display = 'block';
+                englishVersion.style.display = 'none';
+                titleGerman.style.display = 'block';
+                titleEnglish.style.display = 'none';
+                subtitleGerman.style.display = 'block';
+                subtitleEnglish.style.display = 'none';
+                toggleButton.textContent = 'Switch to English';
+                document.documentElement.lang = 'de';
+            }
+            
+            isGerman = !isGerman;
+        }
+        
+        function toggleTooltip(element) {
+            // Close any other open tooltips
+            document.querySelectorAll('.slang.active').forEach(el => {
+                if (el !== element) {
+                    el.classList.remove('active');
+                }
+            });
+            
+            // Toggle the clicked tooltip
+            element.classList.toggle('active');
+        }
+        
+        // Close tooltips when clicking elsewhere
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.slang')) {
+                document.querySelectorAll('.slang.active').forEach(el => {
+                    el.classList.remove('active');
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+</body>
+</html>
