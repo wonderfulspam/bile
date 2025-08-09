@@ -2,25 +2,29 @@
 
 ## Executive Summary
 
-A browser-based tool (userscript/bookmarklet/extension) that transforms any web article into a bilingual, interactive version with clickable slang explanations. The tool preserves cultural context by keeping slang terms in their original language with translations in parentheses, removes JavaScript bloat and popups, and creates a clean, readable bilingual interface.
+A browser-based language learning tool (userscript/bookmarklet/extension) that transforms any web article into a bilingual, interactive reading experience. It helps users build the confidence to read authentic content in their target language by providing instant translations and explanations of slang and cultural nuances. The tool creates a clean, readable, and supportive learning environment by removing JavaScript bloat and popups.
 
 ## Product Overview
 
+### Product Vision
+To empower language learners to bridge the gap between textbook knowledge and real-world content. This tool is designed to make authentic web articles approachable and engaging, helping users improve their vocabulary, cultural understanding, and reading confidence in a foreign language.
+
 ### Core Functionality
-- Extracts article content from any webpage
-- Automatically detects the source language
-- Identifies and preserves slang, idioms, and culturally significant terms
-- Creates a bilingual version with a language toggle (defaults to browser's language)
-- Adds clickable tooltips for extended explanations
-- Strips unnecessary JavaScript, ads, and popups
-- Opens result in a new tab with a clean, minimal design
+- **Language Learning Focus**: Transforms standard web articles into interactive language-learning tools.
+- Extracts article content from any webpage.
+- Automatically detects the source language.
+- Identifies and preserves slang, idioms, and culturally significant terms, providing explanations.
+- Creates a bilingual version with a language toggle (defaults to the user's browser language).
+- Adds clickable tooltips for extended explanations to deepen understanding.
+- Strips unnecessary JavaScript, ads, and popups to create a distraction-free reading experience.
+- Opens the result in a new tab with a clean, minimal design.
 
 ### Key Features
-1. **Slang Preservation**: Slang terms remain in their original form with translations.
-2. **Interactive Explanations**: Click any highlighted term for cultural/linguistic context.
-3. **Clean Interface**: No tracking, popups, or unnecessary scripts.
-4. **Instant Toggle**: Switch between the original language and the translated version.
-5. **Universal Compatibility**: Works on any article webpage.
+1. **Slang Preservation**: Slang terms remain in their original form with translations to provide cultural context.
+2. **Interactive Explanations**: Click any highlighted term for cultural and linguistic context, turning every article into a lesson.
+3. **Clean Interface**: No tracking, popups, or unnecessary scripts to distract from learning.
+4. **Instant Toggle**: Switch between the original language and the translated version to reinforce learning.
+5. **Universal Compatibility**: Works on any article webpage, allowing users to learn from content they are genuinely interested in.
 6. **Configurable Output**: Output language defaults to the browser's language and is user-configurable.
 
 ## Technical Requirements
@@ -188,14 +192,14 @@ A browser-based tool (userscript/bookmarklet/extension) that transforms any web 
 
 ### Example Prompt Structure:
 ```
-You are converting a web article into a bilingual version.
+You are converting a web article into a bilingual version for a language learner.
 
 Instructions:
 1. Identify the source language of the article.
 2. Translate the article to {target_language}.
-3. Identify all slang terms, idioms, and culturally specific expressions.
+3. Identify all slang terms, idioms, and culturally specific expressions that a language learner might not know.
 4. In the translated version, keep the original slang terms with the translation in parentheses.
-5. Provide brief explanations for each term.
+5. Provide brief, clear explanations for each term, suitable for a language learner.
 6. Maintain the original tone and style.
 
 Output as structured JSON with the schema provided.
@@ -233,6 +237,7 @@ Article:
    - No JavaScript errors.
    - Mobile-friendly display.
    - Instant language switching.
+   - Users report increased confidence in reading in the target language.
 
 3. **Performance**:
    - Page generation < 10 seconds total.
@@ -251,7 +256,7 @@ Article:
 
 1. PDF export functionality
 2. Collaborative translations
-3. Integration with language learning tools
+3. Integration with language learning tools (e.g., Anki, Quizlet)
 4. Offline mode with cached translations
 5. Community-contributed explanations database
 
