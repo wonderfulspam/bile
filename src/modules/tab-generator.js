@@ -10,8 +10,14 @@ const BileTabGenerator = {
      * @returns {string} Complete HTML document
      */
     generateBasicHtml(content) {
+        // Check if this is structured content from Phase 2
+        if (this._isStructuredContent(content)) {
+            return this.generateStructuredHtml(content);
+        }
+
+        // Fallback to Phase 1 format for backward compatibility
         const timestamp = new Date().toLocaleString();
-        
+
         return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -29,12 +35,637 @@ const BileTabGenerator = {
         ${this._generateContent(content)}
         ${this._generateFooter()}
     </div>
-    
+
     <script>
         ${this._getInlineJavaScript()}
     </script>
 </body>
 </html>`;
+    },
+
+    /**
+     * Generate HTML with preserved structure for Phase 2 content
+     * @param {Object} content - Structured content from Phase 2
+     * @returns {string} Complete HTML document
+     */
+    generateStructuredHtml(content) {
+        const timestamp = new Date().toLocaleString();
+        const tableOfContents = this._generateTableOfContents(content);
+
+        return `<!DOCTYPE html>
+<html lang="${content.language || 'en'}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bile - ${this._sanitizeTitle(content.title)}</title>
+    <style>
+        ${this._getEnhancedCSS()}
+    </style>
+</head>
+<body>
+    <div class="bile-container">
+        ${this._generateStructuredHeader(content, timestamp)}
+        ${this._generateLanguageToggle(content)}
+        ${tableOfContents}
+        ${this._generateStructuredContent(content)}
+        ${this._generateFooter()}
+    </div>
+
+    <script>
+        ${this._getEnhancedJavaScript()}
+    </script>
+</body>
+</html>`;
+    },
+
+    /**
+     * Check if content is structured (Phase 2) format
+     * @private
+     */
+    _isStructuredContent(content) {
+        return content &&
+               content.content &&
+               Array.isArray(content.content) &&
+               content.content.some(item => item.type && item.text);
+    },
+
+    /**
+     * Generate structured header with enhanced metadata
+     * @private
+     */
+    _generateStructuredHeader(content, timestamp) {
+        const wordCount = content.metadata?.wordCount || 0;
+        const readingTime = content.metadata?.readingTime || 0;
+        const confidence = Math.round((content.confidence || 0) * 100);
+
+        return `
+        <header class="bile-header enhanced">
+            <div class="bile-brand">
+                <h1>🌐 Bile</h1>
+                <p class="subtitle">Bilingual Web Page Converter</p>
+            </div>
+            <div class="bile-meta">
+                <div class="language-info">
+                    <span class="lang-badge source">${(content.language || 'unknown').toUpperCase()}</span>
+                    <span class="arrow">→</span>
+                    <span class="lang-badge target">EN</span>
+                </div>
+                <div class="content-stats">
+                    <div class="stat">
+                        <span class="stat-value">${wordCount}</span>
+                        <span class="stat-label">words</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">${readingTime}</span>
+                        <span class="stat-label">min read</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">${confidence}%</span>
+                        <span class="stat-label">confidence</span>
+                    </div>
+                </div>
+                <div class="processed-time">Processed: ${timestamp}</div>
+                <div class="phase-badge">Phase 2 - Advanced Extraction</div>
+            </div>
+        </header>`;
+    },
+
+    /**
+     * Generate table of contents for long articles
+     * @private
+     */
+    _generateTableOfContents(content) {
+        if (!content.content) return '';
+
+        const headings = content.content.filter(item => item.type === 'heading' && item.level <= 3);
+
+        if (headings.length < 2) return '';
+
+        return `
+        <nav class="table-of-contents">
+            <h3>📋 Table of Contents</h3>
+            <ul class="toc-list">
+                ${headings.map(heading => `
+                    <li class="toc-item level-${heading.level}">
+                        <a href="#${heading.id}" onclick="bile.scrollToHeading('${heading.id}')">${this._sanitizeHtml(heading.text)}</a>
+                    </li>
+                `).join('')}
+            </ul>
+        </nav>`;
+    },
+
+    /**
+     * Generate structured content with semantic elements
+     * @private
+     */
+    _generateStructuredContent(content) {
+        return `
+        <main class="bile-content structured">
+            <div id="original-content" class="content-view active">
+                <article class="article-content">
+                    <header class="article-header">
+                        <h1 class="article-title">${this._sanitizeHtml(content.title)}</h1>
+                        ${this._generateArticleMeta(content)}
+                    </header>
+                    <div class="article-body">
+                        ${this._generateStructuredElements(content.content, 'original')}
+                    </div>
+                </article>
+            </div>
+
+            <div id="translated-content" class="content-view">
+                <article class="article-content">
+                    <header class="article-header">
+                        <h1 class="article-title">${this._sanitizeHtml(content.title)} (Translated)</h1>
+                        ${this._generateArticleMeta(content, true)}
+                    </header>
+                    <div class="article-body">
+                        ${this._generateStructuredElements(content.content, 'translated')}
+                    </div>
+                </article>
+            </div>
+        </main>`;
+    },
+
+    /**
+     * Generate article metadata section
+     * @private
+     */
+    _generateArticleMeta(content, isTranslated = false) {
+        if (!content.author && !content.publishDate) return '';
+
+        return `
+        <div class="article-meta">
+            ${content.author ? `<span class="author">By ${this._sanitizeHtml(content.author)}</span>` : ''}
+            ${content.publishDate ? `<span class="publish-date">${new Date(content.publishDate).toLocaleDateString()}</span>` : ''}
+            ${isTranslated ? '<span class="translated-badge">Translated</span>' : ''}
+        </div>`;
+    },
+
+    /**
+     * Generate structured content elements
+     * @private
+     */
+    _generateStructuredElements(elements, version) {
+        if (!elements || !Array.isArray(elements)) return '';
+
+        return elements.map((element, index) => {
+            switch (element.type) {
+                case 'heading':
+                    return this._generateHeadingElement(element, version);
+                case 'paragraph':
+                    return this._generateParagraphElement(element, version, index);
+                case 'list':
+                    return this._generateListElement(element, version);
+                case 'quote':
+                    return this._generateQuoteElement(element, version);
+                case 'image':
+                    return this._generateImageElement(element, version);
+                default:
+                    return this._generateParagraphElement(element, version, index);
+            }
+        }).join('');
+    },
+
+    /**
+     * Generate heading element
+     * @private
+     */
+    _generateHeadingElement(element, version) {
+        const level = Math.min(Math.max(element.level || 2, 1), 6);
+        const id = version === 'original' ? element.id : `${element.id}-translated`;
+        const text = version === 'original' ? element.text : element.translated || element.text;
+
+        return `<h${level} id="${id}" class="content-heading level-${level}">
+            ${this._sanitizeHtml(text)}
+        </h${level}>`;
+    },
+
+    /**
+     * Generate paragraph element
+     * @private
+     */
+    _generateParagraphElement(element, version, index) {
+        const text = version === 'original' ? element.text : element.translated || element.text;
+
+        return `<div class="content-paragraph" data-element-index="${index}">
+            <p>${this._sanitizeHtml(text)}</p>
+        </div>`;
+    },
+
+    /**
+     * Generate list element
+     * @private
+     */
+    _generateListElement(element, version) {
+        const text = version === 'original' ? element.text : element.translated || element.text;
+        const tag = element.ordered ? 'ol' : 'ul';
+        const listClass = element.ordered ? 'ordered-list' : 'unordered-list';
+
+        // Try to parse the text as list items
+        const items = text.split('\n').filter(item => item.trim());
+
+        return `<div class="content-list">
+            <${tag} class="${listClass}">
+                ${items.map(item => `<li>${this._sanitizeHtml(item.replace(/^[-*•]\s*/, ''))}</li>`).join('')}
+            </${tag}>
+        </div>`;
+    },
+
+    /**
+     * Generate quote element
+     * @private
+     */
+    _generateQuoteElement(element, version) {
+        const text = version === 'original' ? element.text : element.translated || element.text;
+
+        return `<blockquote class="content-quote">
+            <p>${this._sanitizeHtml(text)}</p>
+        </blockquote>`;
+    },
+
+    /**
+     * Generate image element
+     * @private
+     */
+    _generateImageElement(element, version) {
+        if (!element.src) return '';
+
+        const alt = version === 'original' ? element.alt : element.translatedAlt || element.alt;
+
+        return `<figure class="content-image">
+            <img src="${this._sanitizeHtml(element.src)}" alt="${this._sanitizeHtml(alt || '')}" loading="lazy">
+            ${alt ? `<figcaption>${this._sanitizeHtml(alt)}</figcaption>` : ''}
+        </figure>`;
+    },
+
+    /**
+     * Apply content-aware styling
+     * @param {Object} content - The structured content
+     * @returns {string} Additional CSS styles
+     */
+    applyContentStyling(content) {
+        // This could be expanded based on content analysis
+        // For now, return basic responsive styles
+        return `
+        /* Content-specific styles */
+        .article-body {
+            font-size: ${this._getOptimalFontSize(content)};
+            line-height: ${this._getOptimalLineHeight(content)};
+        }
+
+        .content-heading {
+            margin-top: ${this._getHeadingSpacing(content)};
+        }`;
+    },
+
+    /**
+     * Get enhanced CSS with Phase 2 improvements
+     * @private
+     */
+    _getEnhancedCSS() {
+        return this._getInlineCSS() + `
+
+        /* Phase 2 Enhanced Styles */
+        .bile-header.enhanced {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            padding: 2.5rem 2rem;
+        }
+
+        .content-stats {
+            display: flex;
+            gap: 1.5rem;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            min-width: 60px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            margin-top: 0.25rem;
+        }
+
+        .table-of-contents {
+            background: #f8f9fa;
+            margin: 0;
+            padding: 1.5rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .table-of-contents h3 {
+            margin: 0 0 1rem 0;
+            color: #2d3748;
+            font-size: 1.1rem;
+        }
+
+        .toc-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .toc-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .toc-item.level-1 { padding-left: 0; }
+        .toc-item.level-2 { padding-left: 1rem; }
+        .toc-item.level-3 { padding-left: 2rem; }
+
+        .toc-item a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+
+        .toc-item a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .bile-content.structured {
+            padding: 2.5rem;
+        }
+
+        .article-header {
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 1.5rem;
+        }
+
+        .article-meta {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #666;
+            flex-wrap: wrap;
+        }
+
+        .article-meta .author {
+            font-weight: 500;
+        }
+
+        .translated-badge {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .content-heading {
+            color: #2d3748;
+            margin: 2rem 0 1rem 0;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .content-heading.level-1 {
+            font-size: 2rem;
+            margin-top: 2.5rem;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 0.5rem;
+        }
+        .content-heading.level-2 {
+            font-size: 1.5rem;
+            margin-top: 2rem;
+        }
+        .content-heading.level-3 {
+            font-size: 1.25rem;
+            color: #4a5568;
+        }
+        .content-heading.level-4,
+        .content-heading.level-5,
+        .content-heading.level-6 {
+            font-size: 1.1rem;
+            color: #718096;
+        }
+
+        .content-paragraph {
+            margin-bottom: 1.5rem;
+        }
+
+        .content-paragraph p {
+            margin: 0;
+            text-align: justify;
+            hyphens: auto;
+        }
+
+        .content-list {
+            margin: 1.5rem 0;
+        }
+
+        .ordered-list,
+        .unordered-list {
+            padding-left: 2rem;
+            margin: 0;
+        }
+
+        .ordered-list li,
+        .unordered-list li {
+            margin-bottom: 0.5rem;
+            line-height: 1.6;
+        }
+
+        .content-quote {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            margin: 2rem 0;
+            padding: 1.5rem;
+            font-style: italic;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .content-quote p {
+            margin: 0;
+            font-size: 1.05rem;
+            line-height: 1.7;
+            color: #4a5568;
+        }
+
+        .content-image {
+            margin: 2rem 0;
+            text-align: center;
+        }
+
+        .content-image img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-image figcaption {
+            margin-top: 0.75rem;
+            font-size: 0.9rem;
+            color: #666;
+            font-style: italic;
+        }
+
+        /* Responsive enhancements */
+        @media (max-width: 768px) {
+            .bile-header.enhanced {
+                padding: 2rem 1rem;
+            }
+
+            .content-stats {
+                gap: 1rem;
+            }
+
+            .stat {
+                min-width: 50px;
+                padding: 0.5rem 0.75rem;
+            }
+
+            .bile-content.structured {
+                padding: 1.5rem 1rem;
+            }
+
+            .content-heading.level-1 {
+                font-size: 1.5rem;
+            }
+
+            .content-heading.level-2 {
+                font-size: 1.25rem;
+            }
+
+            .table-of-contents {
+                padding: 1rem;
+            }
+
+            .toc-item.level-2 { padding-left: 0.5rem; }
+            .toc-item.level-3 { padding-left: 1rem; }
+        }`;
+    },
+
+    /**
+     * Get enhanced JavaScript with Phase 2 functionality
+     * @private
+     */
+    _getEnhancedJavaScript() {
+        return this._getInlineJavaScript() + `
+
+        // Phase 2 Enhanced Functionality
+        bile.scrollToHeading = function(headingId) {
+            const element = document.getElementById(headingId);
+            if (element) {
+                element.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+
+                // Highlight the heading briefly
+                element.style.background = 'rgba(102, 126, 234, 0.1)';
+                element.style.transition = 'background 0.5s ease';
+
+                setTimeout(() => {
+                    element.style.background = '';
+                }, 2000);
+            }
+        };
+
+        bile.copyText = function(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                bile.showNotification('Text copied to clipboard!');
+            });
+        };
+
+        bile.showNotification = function(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = \`
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #4CAF50;
+                color: white;
+                padding: 12px 20px;
+                border-radius: 6px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                z-index: 10000;
+                font-size: 14px;
+                font-weight: 500;
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+            \`;
+            notification.textContent = message;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        };
+
+        // Enhanced keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.code === 'KeyC' && e.ctrlKey && e.shiftKey) {
+                e.preventDefault();
+                const activeContent = document.querySelector('.content-view.active .article-content');
+                if (activeContent) {
+                    const text = activeContent.textContent;
+                    bile.copyText(text);
+                }
+            } else if (e.code === 'KeyH' && e.ctrlKey) {
+                e.preventDefault();
+                const toc = document.querySelector('.table-of-contents');
+                if (toc) {
+                    toc.scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+        });`;
+    },
+
+    // Helper methods for content optimization
+
+    _getOptimalFontSize(content) {
+        const wordCount = content.metadata?.wordCount || 0;
+        if (wordCount > 2000) return '1.05rem'; // Smaller for long articles
+        if (wordCount < 500) return '1.15rem';  // Larger for short articles
+        return '1.1rem';
+    },
+
+    _getOptimalLineHeight(content) {
+        const complexity = content.complexity || 'medium';
+        switch (complexity) {
+            case 'high': return '1.8';    // More spacing for complex content
+            case 'low': return '1.6';     // Less spacing for simple content
+            default: return '1.7';        // Default spacing
+        }
+    },
+
+    _getHeadingSpacing(content) {
+        const structure = content.structure || 'simple';
+        return structure === 'structured' ? '2.5rem' : '2rem';
     },
 
     /**
@@ -98,7 +729,7 @@ const BileTabGenerator = {
                     </div>
                 </article>
             </div>
-            
+
             <div id="translated-content" class="content-view">
                 <article class="article-content">
                     <h1 class="article-title">${this._sanitizeHtml(content.title_translated)}</h1>
@@ -107,8 +738,8 @@ const BileTabGenerator = {
                     </div>
                 </article>
             </div>
-            
-            ${content.content.some(section => section.slang_terms?.length > 0) ? 
+
+            ${content.content.some(section => section.slang_terms?.length > 0) ?
                 this._generateSlangGlossary(content.content) : ''}
         </main>`;
     },
@@ -121,7 +752,7 @@ const BileTabGenerator = {
         return contentSections.map((section, index) => {
             const text = section[type] || '';
             const highlightedText = this._highlightSlangTerms(text, section.slang_terms || [], `section-${index}`);
-            
+
             return `<div class="content-section" data-section="${index}">
                 <p>${highlightedText}</p>
             </div>`;
@@ -138,16 +769,16 @@ const BileTabGenerator = {
         }
 
         let highlightedText = this._sanitizeHtml(text);
-        
+
         slangTerms.forEach((termData, termIndex) => {
             const term = termData.term;
             const termId = `${sectionId}-term-${termIndex}`;
-            const highlightHtml = `<span class="slang-term" data-term-id="${termId}" 
-                onclick="bile.showTermExplanation('${termId}', '${this._escapeForAttribute(term)}', 
-                '${this._escapeForAttribute(termData.translation)}', 
-                '${this._escapeForAttribute(termData.explanation_original)}', 
+            const highlightHtml = `<span class="slang-term" data-term-id="${termId}"
+                onclick="bile.showTermExplanation('${termId}', '${this._escapeForAttribute(term)}',
+                '${this._escapeForAttribute(termData.translation)}',
+                '${this._escapeForAttribute(termData.explanation_original)}',
                 '${this._escapeForAttribute(termData.explanation_translated)}')">${term}</span>`;
-            
+
             // Replace first occurrence of the term
             const regex = new RegExp(`\\b${term}\\b`, 'i');
             highlightedText = highlightedText.replace(regex, highlightHtml);
@@ -561,20 +1192,20 @@ const BileTabGenerator = {
         // Bile interactive functionality
         window.bile = {
             currentLang: 'original',
-            
+
             showOriginal: function() {
                 this.switchLanguage('original');
             },
-            
+
             showTranslation: function() {
                 this.switchLanguage('translated');
             },
-            
+
             switchLanguage: function(lang) {
                 const originalContent = document.getElementById('original-content');
                 const translatedContent = document.getElementById('translated-content');
                 const toggleBtns = document.querySelectorAll('.toggle-btn');
-                
+
                 if (lang === 'original') {
                     originalContent.classList.add('active');
                     translatedContent.classList.remove('active');
@@ -586,10 +1217,10 @@ const BileTabGenerator = {
                     toggleBtns[0].classList.remove('active');
                     toggleBtns[1].classList.add('active');
                 }
-                
+
                 this.currentLang = lang;
             },
-            
+
             showTermExplanation: function(termId, term, translation, explanationOrig, explanationTrans) {
                 const modalHtml = \`
                     <div class="term-modal active" onclick="bile.closeTermModal(event)">
@@ -608,17 +1239,17 @@ const BileTabGenerator = {
                         </div>
                     </div>
                 \`;
-                
+
                 // Remove existing modal
                 const existingModal = document.querySelector('.term-modal');
                 if (existingModal) {
                     existingModal.remove();
                 }
-                
+
                 // Add new modal
                 document.body.insertAdjacentHTML('beforeend', modalHtml);
             },
-            
+
             closeTermModal: function(event) {
                 if (event && event.target !== event.currentTarget) return;
                 const modal = document.querySelector('.term-modal');
@@ -626,22 +1257,22 @@ const BileTabGenerator = {
                     modal.remove();
                 }
             },
-            
+
             exportToPdf: function() {
                 alert('PDF export will be available in a future version');
             },
-            
+
             copyLink: function() {
                 navigator.clipboard.writeText(window.location.href).then(() => {
                     alert('Link copied to clipboard!');
                 });
             },
-            
+
             showKeyboardShortcuts: function() {
                 alert('Keyboard Shortcuts:\\n\\nSpace - Toggle languages\\nEsc - Close modal\\n\\nMore shortcuts coming in future versions!');
             }
         };
-        
+
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
             if (e.code === 'Space' && !e.target.matches('input, textarea, button')) {
@@ -651,7 +1282,7 @@ const BileTabGenerator = {
                 bile.closeTermModal();
             }
         });
-        
+
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Bile bilingual article loaded successfully');
@@ -666,7 +1297,7 @@ const BileTabGenerator = {
         try {
             const htmlContent = this.generateBasicHtml(content);
             const dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(htmlContent);
-            
+
             // Use GM_openInTab if available (Greasemonkey/Tampermonkey)
             if (typeof GM_openInTab !== 'undefined') {
                 GM_openInTab(dataUrl, { active: true, insert: true });

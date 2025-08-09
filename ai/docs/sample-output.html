@@ -1,0 +1,119 @@
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bile - Cunha and Mbeumo offer glimpse of United’s new era but De Gea steals the show</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background: #f9f9f9;
+        }
+        .bile-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .bile-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .language-toggle {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .toggle-button {
+            padding: 8px 16px;
+            margin: 0 5px;
+            border: 2px solid #4CAF50;
+            background: white;
+            color: #4CAF50;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .toggle-button.active {
+            background: #4CAF50;
+            color: white;
+        }
+        .content-section {
+            margin: 20px 0;
+        }
+        .phase-notice {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 4px 4px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="bile-header">
+        <h1>🌐 Bile - Bilingual Web Page Converter</h1>
+        <p>Phase 1 Implementation - Basic Infrastructure Test</p>
+    </div>
+
+    <div class="language-toggle">
+        <button class="toggle-button active" onclick="showOriginal()">Original (en)</button>
+        <button class="toggle-button" onclick="showTranslation()">Translation (en)</button>
+    </div>
+
+    <div class="bile-content">
+        <div class="phase-notice">
+            <strong>Phase 1 Test:</strong> This is a placeholder demonstrating the core infrastructure.
+            Content extraction and translation will be implemented in Phases 2 and 3.
+        </div>
+
+        <div id="original-content" class="content-section" style="display: block;">
+            <h2>Cunha and Mbeumo offer glimpse of United’s new era but De Gea steals the show</h2>
+            <div>
+                <p>Cunha and Mbeumo offer glimpse of United’s new era but De Gea steals the show
+
+Ruben Amorim’s side still a work in progress after Fiorentina friendly but hopes are high for moment when Benjamin Sesko joins attacking newcomers on the pitch
+
+David de Gea’s appearance between the sticks at Old Trafford was a moment of nostalgia for Manchester United fans, a reminder of better times. The goalkeeper’s departure at the end of the 2022-2023 season epitomises the club’s self-inflicted problems, the sort...</p>
+            </div>
+        </div>
+
+        <div id="translated-content" class="content-section" style="display: none;">
+            <h2>Cunha and Mbeumo offer glimpse of United’s new era but De Gea steals the show (Translated)</h2>
+            <div>
+                <p>[TRANSLATED] Cunha and Mbeumo offer glimpse of United’s new era but De Gea steals the show
+
+Ruben Amorim’s side still a work in progress after Fiorentina friendly but hopes are high for moment when Benjamin Sesko joins attacking newcomers on the pitch
+
+David de Gea’s appearance between the sticks at Old Trafford was a moment of nostalgia for Manchester United fans, a reminder of better times. The goalkeeper’s departure at the end of the 2022-2023 season epitomises the club’s self-inflicted problems, the sort...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showOriginal() {
+            document.getElementById('original-content').style.display = 'block';
+            document.getElementById('translated-content').style.display = 'none';
+            updateToggleButtons(0);
+        }
+
+        function showTranslation() {
+            document.getElementById('original-content').style.display = 'none';
+            document.getElementById('translated-content').style.display = 'block';
+            updateToggleButtons(1);
+        }
+
+        function updateToggleButtons(activeIndex) {
+            const buttons = document.querySelectorAll('.toggle-button');
+            buttons.forEach((button, index) => {
+                button.classList.toggle('active', index === activeIndex);
+            });
+        }
+    </script>
+
+<button id="bile-trigger-button" style="position: fixed; top: 20px; right: 20px; z-index: 10000; background: rgb(76, 175, 80); color: white; border: medium; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: bold; box-shadow: rgba(0, 0, 0, 0.3) 0px 2px 5px; transition: background-color 0.3s;">🌐 Bile</button></body></html>

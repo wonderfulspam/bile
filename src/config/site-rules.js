@@ -1,0 +1,512 @@
+/**
+ * site-rules.js - Site-specific extraction rules for Bile
+ * Provides fallback extraction methods for major news sites and blogs
+ */
+
+const BILE_SITE_RULES = {
+    // German news sites
+    'taz.de': {
+        selectors: {
+            title: '.article-title h1, .sectitle',
+            author: '.author-name, .byline-author',
+            date: '.article-date, .date',
+            content: '.article-body, .sectbody',
+            remove: ['.advertisement', '.social-media', '.related-articles']
+        },
+        confidence: 0.8
+    },
+
+    'spiegel.de': {
+        selectors: {
+            title: '.headline, h1',
+            author: '.article-byline .author',
+            date: '.article-byline time',
+            content: '.article-section, .content-element',
+            remove: ['.advertisement', '.teaser-list', '.social-bar']
+        },
+        confidence: 0.85
+    },
+
+    'zeit.de': {
+        selectors: {
+            title: '.article-header__title, h1',
+            author: '.metadata__author',
+            date: '.metadata__date',
+            content: '.article-body, .paragraph',
+            remove: ['.ad-container', '.teaser-row', '.social-media']
+        },
+        confidence: 0.8
+    },
+
+    'sueddeutsche.de': {
+        selectors: {
+            title: '.article-title, h1',
+            author: '.author',
+            date: '.timeformat',
+            content: '.article-body, .content',
+            remove: ['.advertisement', '.socialbar', '.teaser']
+        },
+        confidence: 0.75
+    },
+
+    // French news sites
+    'lemonde.fr': {
+        selectors: {
+            title: '.article__title, h1',
+            author: '.article__author',
+            date: '.article__date',
+            content: '.article__content, .article__paragraph',
+            remove: ['.inread', '.services', '.aside']
+        },
+        confidence: 0.8
+    },
+
+    'lefigaro.fr': {
+        selectors: {
+            title: '.fig-headline, h1',
+            author: '.fig-author',
+            date: '.fig-date',
+            content: '.fig-content, .fig-content-body',
+            remove: ['.fig-premium', '.fig-related', '.fig-ad']
+        },
+        confidence: 0.75
+    },
+
+    'liberation.fr': {
+        selectors: {
+            title: '.article-title, h1',
+            author: '.article-author',
+            date: '.article-date',
+            content: '.article-body, .article-paragraph',
+            remove: ['.pub', '.related', '.share']
+        },
+        confidence: 0.7
+    },
+
+    // Spanish news sites
+    'elpais.com': {
+        selectors: {
+            title: '.articulo-titulo, h1',
+            author: '.autor-nombre',
+            date: '.articulo-fecha',
+            content: '.articulo-cuerpo, .articulo-parrafo',
+            remove: ['.publicidad', '.relacionado', '.social']
+        },
+        confidence: 0.8
+    },
+
+    'elmundo.es': {
+        selectors: {
+            title: '.ue-c-article__headline, h1',
+            author: '.ue-c-article__byline-name',
+            date: '.ue-c-article__byline-date',
+            content: '.ue-c-article__body, .ue-c-article__paragraph',
+            remove: ['.ue-c-ad', '.ue-c-related', '.ue-c-share']
+        },
+        confidence: 0.75
+    },
+
+    'abc.es': {
+        selectors: {
+            title: '.titular, h1',
+            author: '.autor',
+            date: '.fecha',
+            content: '.cuerpo, .parrafo',
+            remove: ['.publicidad', '.relacionadas', '.compartir']
+        },
+        confidence: 0.7
+    },
+
+    // English news sites
+    'bbc.com': {
+        selectors: {
+            title: '.gel-trafalgar-bold, h1',
+            author: '.byline__name',
+            date: '.date',
+            content: '.story-body, .gel-body-copy',
+            remove: ['.bbccom__ad', '.story-more', '.social-embed']
+        },
+        confidence: 0.9
+    },
+
+    'theguardian.com': {
+        selectors: {
+            title: '.content__headline, h1',
+            author: '.byline',
+            date: '.content__dateline',
+            content: '.content__article-body, .element-rich-text',
+            remove: ['.ad-slot', '.submeta', '.element-rich-link']
+        },
+        confidence: 0.85
+    },
+
+    'nytimes.com': {
+        selectors: {
+            title: '.css-fwqvlz, h1',
+            author: '.css-1baulvz',
+            date: '.css-1hfnkoc',
+            content: '.StoryBodyCompanionColumn, .css-53u6y8',
+            remove: ['.css-ad', '.related-coverage', '.css-share']
+        },
+        confidence: 0.8
+    },
+
+    // Blog platforms
+    'medium.com': {
+        selectors: {
+            title: 'h1',
+            author: '[data-testid="authorName"]',
+            date: '[data-testid="storyPublishDate"]',
+            content: 'article section, .section-content',
+            remove: ['.sidebar', '.related-stories', '.social-share']
+        },
+        confidence: 0.75
+    },
+
+    'substack.com': {
+        selectors: {
+            title: '.post-title, h1',
+            author: '.byline-names',
+            date: '.post-date',
+            content: '.available-content, .post-content',
+            remove: ['.subscribe-widget', '.related-posts', '.share-buttons']
+        },
+        confidence: 0.8
+    },
+
+    // Generic WordPress
+    'wordpress.com': {
+        selectors: {
+            title: '.entry-title, h1',
+            author: '.author',
+            date: '.entry-date',
+            content: '.entry-content, .post-content',
+            remove: ['.sidebar', '.related', '.share']
+        },
+        confidence: 0.6
+    }
+};
+
+const BileSiteRules = {
+    /**
+     * Apply site-specific extraction rules
+     */
+    applySiteRules(domain, document) {
+        const rules = this.getRulesForDomain(domain);
+        if (!rules) return null;
+
+        try {
+            const content = this.extractWithRules(document, rules);
+            if (content && this.validateExtractedContent(content)) {
+                content.confidence = rules.confidence;
+                return content;
+            }
+        } catch (error) {
+            console.warn(`Site-specific extraction failed for ${domain}:`, error);
+        }
+
+        return null;
+    },
+
+    /**
+     * Get extraction rules for a specific domain
+     */
+    getRulesForDomain(domain) {
+        // Check for exact match first
+        if (BILE_SITE_RULES[domain]) {
+            return BILE_SITE_RULES[domain];
+        }
+
+        // Check for subdomain matches
+        for (const [siteDomain, rules] of Object.entries(BILE_SITE_RULES)) {
+            if (domain.includes(siteDomain)) {
+                return rules;
+            }
+        }
+
+        return null;
+    },
+
+    /**
+     * Extract content using site-specific rules
+     */
+    extractWithRules(document, rules) {
+        // Remove unwanted elements first
+        if (rules.remove) {
+            rules.remove.forEach(selector => {
+                const elements = document.querySelectorAll(selector);
+                elements.forEach(el => el.remove());
+            });
+        }
+
+        // Extract title
+        const title = this.extractWithSelector(document, rules.selectors.title) || 
+                     document.title || 'Untitled';
+
+        // Extract author
+        const author = this.extractWithSelector(document, rules.selectors.author);
+
+        // Extract date
+        const publishDate = this.extractDate(document, rules.selectors.date);
+
+        // Extract main content
+        const contentElement = this.extractContentElement(document, rules.selectors.content);
+        if (!contentElement) return null;
+
+        // Structure the content
+        const structuredContent = this.structureExtractedContent(contentElement);
+
+        // Detect language
+        const language = this.detectLanguageFromContent(contentElement);
+
+        // Generate metadata
+        const metadata = this.generateMetadata(contentElement);
+
+        return {
+            title: title.trim(),
+            author: author ? author.trim() : null,
+            publishDate,
+            language,
+            content: structuredContent,
+            metadata,
+            extractionMethod: 'site-specific'
+        };
+    },
+
+    /**
+     * Extract text using CSS selector
+     */
+    extractWithSelector(document, selector) {
+        if (!selector) return null;
+
+        const selectors = selector.split(', ');
+        for (const sel of selectors) {
+            const element = document.querySelector(sel);
+            if (element) {
+                return element.getAttribute('content') || 
+                       element.getAttribute('datetime') || 
+                       element.textContent;
+            }
+        }
+        return null;
+    },
+
+    /**
+     * Extract and parse date
+     */
+    extractDate(document, selector) {
+        const dateString = this.extractWithSelector(document, selector);
+        if (!dateString) return null;
+
+        const date = new Date(dateString);
+        return isNaN(date.getTime()) ? null : date;
+    },
+
+    /**
+     * Extract main content element
+     */
+    extractContentElement(document, selector) {
+        if (!selector) return null;
+
+        const selectors = selector.split(', ');
+        for (const sel of selectors) {
+            const elements = document.querySelectorAll(sel);
+            if (elements.length > 0) {
+                // If multiple elements, combine them
+                if (elements.length === 1) {
+                    return elements[0];
+                } else {
+                    // Create a container for multiple content elements
+                    const container = document.createElement('div');
+                    elements.forEach(el => container.appendChild(el.cloneNode(true)));
+                    return container;
+                }
+            }
+        }
+        return null;
+    },
+
+    /**
+     * Structure extracted content into semantic elements
+     */
+    structureExtractedContent(contentElement) {
+        const content = [];
+        const walker = document.createTreeWalker(
+            contentElement,
+            NodeFilter.SHOW_ELEMENT,
+            {
+                acceptNode: (node) => {
+                    const tagName = node.tagName.toLowerCase();
+                    if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'blockquote', 'img'].includes(tagName)) {
+                        return NodeFilter.FILTER_ACCEPT;
+                    }
+                    return NodeFilter.FILTER_SKIP;
+                }
+            }
+        );
+
+        let node;
+        while (node = walker.nextNode()) {
+            const element = this.createContentElement(node);
+            if (element) {
+                content.push(element);
+            }
+        }
+
+        return content;
+    },
+
+    /**
+     * Create structured content element
+     */
+    createContentElement(node) {
+        const tagName = node.tagName.toLowerCase();
+        const text = node.textContent.trim();
+
+        if (!text && tagName !== 'img') return null;
+
+        const element = {
+            text: text,
+            html: node.outerHTML
+        };
+
+        switch (tagName) {
+            case 'h1':
+            case 'h2':
+            case 'h3':
+            case 'h4':
+            case 'h5':
+            case 'h6':
+                element.type = 'heading';
+                element.level = parseInt(tagName.charAt(1));
+                element.id = `heading-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                break;
+            case 'p':
+                element.type = 'paragraph';
+                break;
+            case 'ul':
+            case 'ol':
+                element.type = 'list';
+                element.ordered = tagName === 'ol';
+                break;
+            case 'blockquote':
+                element.type = 'quote';
+                break;
+            case 'img':
+                element.type = 'image';
+                element.src = node.src;
+                element.alt = node.alt || '';
+                element.text = element.alt; // Use alt text as text content
+                break;
+            default:
+                element.type = 'paragraph'; // Default fallback
+        }
+
+        return element;
+    },
+
+    /**
+     * Detect language from extracted content
+     */
+    detectLanguageFromContent(contentElement) {
+        const text = contentElement.textContent || '';
+        
+        // Simple language detection patterns
+        const patterns = {
+            'en': /\b(the|and|or|but|in|on|at|to|for|of|with|by)\b/gi,
+            'de': /\b(der|die|das|und|oder|aber|in|auf|an|zu|für|von|mit|bei)\b/gi,
+            'fr': /\b(le|la|les|et|ou|mais|dans|sur|à|pour|de|avec|par)\b/gi,
+            'es': /\b(el|la|los|las|y|o|pero|en|sobre|a|para|de|con|por)\b/gi
+        };
+
+        let maxMatches = 0;
+        let detectedLang = 'en';
+
+        Object.entries(patterns).forEach(([lang, pattern]) => {
+            const matches = (text.match(pattern) || []).length;
+            if (matches > maxMatches) {
+                maxMatches = matches;
+                detectedLang = lang;
+            }
+        });
+
+        return detectedLang;
+    },
+
+    /**
+     * Generate metadata for extracted content
+     */
+    generateMetadata(contentElement) {
+        const text = contentElement.textContent || '';
+        const wordCount = (text.match(/\b\w+\b/g) || []).length;
+        const readingTime = Math.ceil(wordCount / 200);
+
+        return {
+            wordCount,
+            readingTime,
+            domain: window.location.hostname,
+            url: window.location.href,
+            extractedAt: new Date()
+        };
+    },
+
+    /**
+     * Validate extracted content quality
+     */
+    validateExtractedContent(content) {
+        if (!content) return false;
+        if (!content.title || content.title.length < 3) return false;
+        if (!content.content || content.content.length === 0) return false;
+
+        // Check minimum word count
+        const wordCount = content.metadata?.wordCount || 0;
+        if (wordCount < 100) return false;
+
+        // Check for reasonable content structure
+        const hasText = content.content.some(element => 
+            element.type === 'paragraph' && element.text.length > 50
+        );
+
+        return hasText;
+    },
+
+    /**
+     * Get list of supported domains
+     */
+    getSupportedDomains() {
+        return Object.keys(BILE_SITE_RULES);
+    },
+
+    /**
+     * Check if domain is supported
+     */
+    isDomainSupported(domain) {
+        return this.getRulesForDomain(domain) !== null;
+    },
+
+    /**
+     * Add custom rules for a domain
+     */
+    addCustomRules(domain, rules) {
+        BILE_SITE_RULES[domain] = {
+            ...rules,
+            confidence: rules.confidence || 0.5
+        };
+    },
+
+    /**
+     * Get extraction confidence for a domain
+     */
+    getConfidenceForDomain(domain) {
+        const rules = this.getRulesForDomain(domain);
+        return rules ? rules.confidence : 0;
+    }
+};
+
+// Export for module system or global use
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { BileSiteRules, BILE_SITE_RULES };
+} else if (typeof window !== 'undefined') {
+    window.BileSiteRules = BileSiteRules;
+    window.BILE_SITE_RULES = BILE_SITE_RULES;
+}
