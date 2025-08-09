@@ -42,8 +42,9 @@ To empower language learners to bridge the gap between textbook knowledge and re
 - **Configurable Language**: Output language defaults to the user's browser language and can be changed in the settings.
 
 ### API Integration
-- Anthropic Claude API (or compatible LLM API)
+- OpenRouter API with free models (Llama 3.1, Mistral, Gemma 2, Qwen 2.5, Phi-3.5)
 - API key management (secure storage)
+- Model selection and failover capabilities
 - Rate limiting consideration
 - Error handling for API failures
 
@@ -55,7 +56,7 @@ To empower language learners to bridge the gap between textbook knowledge and re
 **Tasks**:
 1. Create userscript boilerplate (Tampermonkey/Greasemonkey compatible).
 2. Implement secure API key storage mechanism.
-3. Set up basic API call structure to Claude.
+3. Set up basic API call structure to OpenRouter.
 4. Create a simple UI trigger (button/keyboard shortcut).
 5. Implement new tab creation with basic HTML.
 
@@ -182,7 +183,7 @@ To empower language learners to bridge the gap between textbook knowledge and re
 
 ## API Prompt Engineering
 
-### Key Instructions for Claude API:
+### Key Instructions for OpenRouter API:
 1. First, identify the primary language of the text.
 2. Identify ALL slang, idioms, colloquialisms, and culturally specific terms.
 3. Preserve original terms in the translated text.
@@ -265,7 +266,7 @@ Article:
 Begin by creating a simple userscript that:
 1. Adds a button to news sites.
 2. When clicked, extracts the article title.
-3. Sends it to the Claude API.
+3. Sends it to the OpenRouter API.
 4. Opens a new tab with the response.
 
 This minimal viable product will establish the core workflow and API integration pattern for subsequent phases.

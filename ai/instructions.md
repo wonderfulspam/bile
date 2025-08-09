@@ -6,7 +6,7 @@ This file provides guidance to coding agents like `claude` or `gemini` when work
 
 ## Project Information
 
-Bile is a bilingual web page converter for language learning. For complete project details, architecture, and implementation roadmap, see [SPECIFICATION.md](SPECIFICATION.md).
+Bile is a bilingual web page converter for language learning using OpenRouter's free AI models. For complete project details, architecture, and implementation roadmap, see [SPECIFICATION.md](SPECIFICATION.md).
 
 ## Key File Locations
 

@@ -48,7 +48,7 @@ The project follows a 6-phase development approach:
 Bile will be implemented as a userscript/bookmarklet with these core components:
 
 - **Content Extractor** - Intelligently identifies and extracts article content
-- **Language Processor** - Uses AI APIs to detect language and create translations
+- **Language Processor** - Uses OpenRouter free models to detect language and create translations
 - **HTML Generator** - Creates interactive bilingual output
 - **API Handler** - Manages communication with translation services
 
