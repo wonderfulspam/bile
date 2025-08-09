@@ -77,7 +77,7 @@
     <div class="test-container">
         <h1>🌐 Bile Phase 1 Test Runner</h1>
         <p><strong>Purpose:</strong> Test the core infrastructure components of Bile Phase 1 implementation</p>
-        
+
         <div class="test-section">
             <h3>1. Userscript Simulation Test</h3>
             <p>This simulates the userscript environment and tests basic functionality</p>
@@ -117,12 +117,12 @@
     <!-- Mock article content for testing -->
     <article class="article-content" style="display: none;">
         <h1>Test Article: German Language Learning</h1>
-        <p>Dies ist ein Beispielartikel über das Erlernen der deutschen Sprache. 
+        <p>Dies ist ein Beispielartikel über das Erlernen der deutschen Sprache.
         Es enthält verschiedene <em>umgangssprachliche</em> Begriffe und kulturelle Referenzen.</p>
-        <p>Learning German can be challenging, but with the right tools and approach, 
-        it becomes much more manageable. This article explores various techniques 
+        <p>Learning German can be challenging, but with the right tools and approach,
+        it becomes much more manageable. This article explores various techniques
         for improving your German language skills.</p>
-        <p>Besonders wichtig ist es, authentische Texte zu lesen und dabei 
+        <p>Besonders wichtig ist es, authentische Texte zu lesen und dabei
         unbekannte Begriffe zu verstehen. Kultureller Kontext spielt eine große Rolle.</p>
     </article>
 
@@ -156,7 +156,7 @@
             try {
                 // In a real implementation, these would be loaded from separate files
                 // For testing, we'll use simplified inline versions
-                
+
                 // Simplified BileStorage
                 window.BileStorage = {
                     async storeApiKey(key) {
@@ -238,6 +238,7 @@
                         <!DOCTYPE html>
                         <html>
                         <head>
+                            <meta charset="UTF-8">
                             <title>Bile - ${content.title_original}</title>
                             <style>
                                 body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
@@ -255,24 +256,73 @@
                                 <strong>Success!</strong> This demonstrates Phase 1 core infrastructure working correctly.
                             </div>
                             <div class="language-toggle">
-                                <button class="toggle-btn active">Original (${content.source_language})</button>
-                                <button class="toggle-btn">Translation (${content.target_language})</button>
+                                <button class="toggle-btn active" onclick="showOriginal()">Original (${content.source_language})</button>
+                                <button class="toggle-btn" onclick="showTranslation()">Translation (${content.target_language})</button>
                             </div>
-                            <div class="content-view active">
+                            <div class="content-view active" id="original-content">
                                 <h2>${content.title_original}</h2>
                                 <p>${content.content[0].original}</p>
                             </div>
-                            <div class="content-view">
+                            <div class="content-view" id="translated-content">
                                 <h2>${content.title_translated}</h2>
                                 <p>${content.content[0].translated}</p>
                             </div>
+                            <scr` + `ipt>
+                                function showOriginal() {
+                                    document.getElementById('original-content').classList.add('active');
+                                    document.getElementById('translated-content').classList.remove('active');
+                                    document.querySelectorAll('.toggle-btn')[0].classList.add('active');
+                                    document.querySelectorAll('.toggle-btn')[1].classList.remove('active');
+                                }
+                                function showTranslation() {
+                                    document.getElementById('original-content').classList.remove('active');
+                                    document.getElementById('translated-content').classList.add('active');
+                                    document.querySelectorAll('.toggle-btn')[0].classList.remove('active');
+                                    document.querySelectorAll('.toggle-btn')[1].classList.add('active');
+                                }
+                            </scr` + `ipt>
                         </body>
                         </html>`;
                     },
                     openInNewTab(content) {
-                        const html = this.generateBasicHtml(content);
-                        const dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
-                        window.open(dataUrl, '_blank');
+                        try {
+                            const html = this.generateBasicHtml(content);
+
+                            // Use Blob URL instead of data URL (more reliable for large content)
+                            const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+                            const url = URL.createObjectURL(blob);
+
+                            // Try to open in new tab
+                            const newWindow = window.open(url, '_blank');
+
+                            // Clean up the URL after a delay to avoid memory leaks
+                            setTimeout(() => {
+                                URL.revokeObjectURL(url);
+                            }, 1000);
+
+                            // Check if popup was blocked
+                            if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
+                                // Fallback: create download link
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = 'bile-test-result.html';
+                                a.textContent = 'Download Test Result (popup blocked)';
+                                a.style.display = 'block';
+                                a.style.marginTop = '10px';
+                                a.style.color = '#4CAF50';
+
+                                // Find the test button and add the download link after it
+                                const testButton = document.querySelector('button[onclick*="openInNewTab"]');
+                                if (testButton && testButton.parentNode) {
+                                    testButton.parentNode.appendChild(a);
+                                }
+
+                                alert('Popup blocked! A download link has been added below the button.');
+                            }
+                        } catch (error) {
+                            console.error('Error in openInNewTab:', error);
+                            alert('Error opening new tab: ' + error.message);
+                        }
                     }
                 };
 
@@ -287,7 +337,7 @@
         async function runUserscriptTest() {
             const output = document.getElementById('userscript-output');
             output.innerHTML = 'Running userscript simulation...';
-            
+
             try {
                 const loaded = await loadBileModules();
                 if (loaded) {
@@ -306,12 +356,12 @@
 
         async function testArticleDetection() {
             const output = document.getElementById('article-output');
-            
+
             try {
                 await loadBileModules();
                 const isArticle = BileUtils.isArticlePage();
                 const metadata = BileUtils.extractPageMetadata();
-                
+
                 output.innerHTML = `Article Detection Result: ${isArticle ? '✅ DETECTED' : '❌ NOT DETECTED'}\n` +
                                  `Page Title: ${metadata.title}\n` +
                                  `Domain: ${metadata.domain}\n` +
@@ -325,16 +375,16 @@
 
         async function testContentExtraction() {
             const output = document.getElementById('content-output');
-            
+
             try {
                 await loadBileModules();
-                
+
                 // Extract content from the hidden test article
                 const article = document.querySelector('article');
                 const title = article.querySelector('h1').textContent;
                 const paragraphs = Array.from(article.querySelectorAll('p')).map(p => p.textContent);
                 const content = `Title: ${title}\n\nContent:\n${paragraphs.join('\n\n')}`;
-                
+
                 output.innerHTML = `✅ Content Extracted Successfully:\n\n${content.substring(0, 300)}...`;
                 output.className = 'output success';
             } catch (error) {
@@ -345,10 +395,10 @@
 
         async function testHtmlGeneration() {
             const output = document.getElementById('html-output');
-            
+
             try {
                 await loadBileModules();
-                
+
                 const mockContent = {
                     source_language: 'de',
                     target_language: 'en',
@@ -362,10 +412,10 @@
                     }],
                     processing_info: { phase: 1, mock_data: true }
                 };
-                
+
                 const html = BileTabGenerator.generateBasicHtml(mockContent);
                 const preview = html.substring(0, 500) + '...';
-                
+
                 output.innerHTML = `✅ HTML Generated Successfully!\n\nHTML Preview:\n${BileUtils.sanitizeHtml(preview)}`;
                 output.className = 'output success';
             } catch (error) {
@@ -377,50 +427,59 @@
         async function runFullPipelineTest() {
             const output = document.getElementById('pipeline-output');
             output.innerHTML = 'Running full pipeline test...';
-            
+
             try {
                 await loadBileModules();
-                
+
                 // Step 1: Store a mock API key
                 await BileStorage.storeApiKey('sk-ant-test-key-for-phase1-testing-12345');
                 output.innerHTML += '\n✅ Step 1: API key storage - SUCCESS';
-                
+
                 // Step 2: Test API connection
                 const connected = await BileApiClient.testApiConnection();
                 if (!connected) throw new Error('API connection test failed');
                 output.innerHTML += '\n✅ Step 2: API connection test - SUCCESS';
-                
+
                 // Step 3: Extract content
                 const article = document.querySelector('article');
                 const content = article.textContent;
                 output.innerHTML += '\n✅ Step 3: Content extraction - SUCCESS';
-                
+
                 // Step 4: Process content
                 const processed = await BileApiClient.callClaude(content, 'en');
                 output.innerHTML += '\n✅ Step 4: Content processing - SUCCESS';
-                
+
                 // Step 5: Generate HTML
                 const html = BileTabGenerator.generateBasicHtml(processed);
                 output.innerHTML += '\n✅ Step 5: HTML generation - SUCCESS';
-                
+
                 // Step 6: Open in new tab (simulated)
                 output.innerHTML += '\n✅ Step 6: New tab ready for opening';
-                
+
                 output.innerHTML += '\n\n🎉 FULL PIPELINE TEST COMPLETED SUCCESSFULLY!';
                 output.innerHTML += '\nPhase 1 core infrastructure is working correctly.';
-                
+
                 // Add button to test the actual tab opening
                 const testButton = document.createElement('button');
                 testButton.textContent = 'Open Test Result in New Tab';
-                testButton.onclick = () => BileTabGenerator.openInNewTab(processed);
+                testButton.onclick = () => {
+                    try {
+                        console.log('Button clicked, processed data:', processed);
+                        console.log('BileTabGenerator available:', !!window.BileTabGenerator);
+                        BileTabGenerator.openInNewTab(processed);
+                    } catch (error) {
+                        console.error('Error opening new tab:', error);
+                        alert('Error: ' + error.message);
+                    }
+                };
                 output.appendChild(document.createElement('br'));
                 output.appendChild(testButton);
-                
+
                 output.className = 'output success';
-                
+
                 // Clean up test data
                 await BileStorage.clearApiKey();
-                
+
             } catch (error) {
                 output.innerHTML += '\n❌ ERROR: ' + error.message;
                 output.className = 'output error';

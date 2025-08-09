@@ -13,3 +13,4 @@ find a tool or command that works.
 ## Command overview
 
 * [pre-commit.sh](./pre-commit.sh) - Run this when you think you are done with a chunk of work to verify that you cleaned things up after yourself
+* [check-html.sh](./check-html.sh) - Validate and lint HTML files using tidy

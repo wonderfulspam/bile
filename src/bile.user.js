@@ -97,24 +97,24 @@
                 box-shadow: 0 2px 5px rgba(0,0,0,0.3);
                 transition: background-color 0.3s;
             `;
-            
+
             button.addEventListener('mouseenter', () => {
                 button.style.backgroundColor = '#45a049';
             });
-            
+
             button.addEventListener('mouseleave', () => {
                 button.style.backgroundColor = '#4CAF50';
             });
-            
+
             button.addEventListener('click', this.handleTriggerClick.bind(this));
-            
+
             return button;
         },
 
         async handleTriggerClick(event) {
             try {
                 this.showProcessingIndicator();
-                
+
                 // Check if API key exists
                 if (!await BileStorage.hasApiKey()) {
                     const apiKey = prompt('Please enter your Anthropic Claude API key:');
@@ -128,13 +128,13 @@
                 // Get article content (placeholder for Phase 2)
                 const title = document.title;
                 const content = this.extractBasicContent();
-                
+
                 // Process content (placeholder call)
                 const processedContent = await BileApiClient.callClaude(content);
-                
+
                 // Generate and open result
                 BileTabGenerator.openInNewTab(processedContent);
-                
+
                 this.hideProcessingIndicator();
             } catch (error) {
                 BileApiClient.handleApiError(error);
@@ -148,7 +148,7 @@
             const title = document.title;
             const headings = Array.from(document.querySelectorAll('h1, h2, h3')).map(h => h.textContent);
             const paragraphs = Array.from(document.querySelectorAll('p')).slice(0, 3).map(p => p.textContent);
-            
+
             return `Title: ${title}\n\nHeadings: ${headings.join(', ')}\n\nContent preview: ${paragraphs.join('\n\n')}`;
         },
 
@@ -253,7 +253,7 @@
 
     <div class="bile-content">
         <div class="phase-notice">
-            <strong>Phase 1 Test:</strong> This is a placeholder demonstrating the core infrastructure. 
+            <strong>Phase 1 Test:</strong> This is a placeholder demonstrating the core infrastructure.
             Content extraction and translation will be implemented in Phases 2 and 3.
         </div>
 
@@ -298,8 +298,20 @@
 
         openInNewTab(content) {
             const htmlContent = this.generateBasicHtml(content);
-            const dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(htmlContent);
-            GM_openInTab(dataUrl, false);
+
+            // Try data URL first (works in most userscript environments)
+            try {
+                const dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(htmlContent);
+                GM_openInTab(dataUrl, false);
+            } catch (error) {
+                // Fallback: create a blob URL
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const blobUrl = URL.createObjectURL(blob);
+                GM_openInTab(blobUrl, false);
+
+                // Clean up blob URL after a delay
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+            }
         },
 
         createPlaceholderContent() {
@@ -348,7 +360,7 @@
     async function initializeBile() {
         try {
             BileUtils.debugLog('Initializing Bile userscript');
-            
+
             if (isArticlePage()) {
                 addTriggerButton();
                 BileUI.registerKeyboardShortcut();
@@ -368,12 +380,12 @@
         const hasArticleIndicators = document.querySelector('article, .article, #article, [role="article"]') ||
                                    document.querySelectorAll('p').length > 3 ||
                                    document.querySelector('h1');
-        
+
         // Check if we're on a known news site
-        const knownSites = ['bbc.com', 'theguardian.com', 'taz.de', 'spiegel.de', 'zeit.de', 
+        const knownSites = ['bbc.com', 'theguardian.com', 'taz.de', 'spiegel.de', 'zeit.de',
                            'elpais.com', 'elmundo.es', 'lemonde.fr', 'lefigaro.fr'];
         const isKnownSite = knownSites.some(site => url.includes(site));
-        
+
         return isKnownSite && hasArticleIndicators;
     }
 

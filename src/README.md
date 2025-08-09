@@ -39,25 +39,19 @@ https://raw.githubusercontent.com/user/bile/main/src/bile.user.js
 ### English
 - BBC News (bbc.com)
 - The Guardian (theguardian.com)
-- CNN (cnn.com) 
-- New York Times (nytimes.com)
-- Reuters (reuters.com)
 
 ### German
 - taz (taz.de)
 - Der Spiegel (spiegel.de)  
 - Die Zeit (zeit.de)
-- FAZ (faz.net)
 
 ### Spanish
 - El País (elpais.com)
 - El Mundo (elmundo.es)
-- La Vanguardia (lavanguardia.com)
 
 ### French
 - Le Monde (lemonde.fr)
 - Le Figaro (lefigaro.fr)
-- Libération (liberation.fr)
 
 ## Phase 1 Features
 
