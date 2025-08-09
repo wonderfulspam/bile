@@ -349,7 +349,8 @@ const BileContentAnalyzer = {
      */
     extractTopics(text) {
         // Simple keyword extraction
-        const words = text.toLowerCase()
+        const textStr = typeof text === 'string' ? text : String(text || '');
+        const words = textStr.toLowerCase()
             .replace(/[^\w\s]/g, ' ')
             .split(/\s+/)
             .filter(word => word.length > 3);
@@ -384,7 +385,8 @@ const BileContentAnalyzer = {
 
     countSyllables(text) {
         // Simplified syllable counting
-        return text.toLowerCase()
+        const textStr = typeof text === 'string' ? text : String(text || '');
+        return textStr.toLowerCase()
             .replace(/[^a-z]/g, '')
             .replace(/[aeiouy]+/g, 'a')
             .length || 1;

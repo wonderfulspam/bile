@@ -1,13 +1,14 @@
 #!/bin/bash
 
-# Quick script to open the userscript in default browser
+# Quick script to open the built userscript in default browser
 # This triggers Tampermonkey's update prompt
 
-USERSCRIPT_PATH="$(dirname "$0")/../src/bile.user.js"
+USERSCRIPT_PATH="$(dirname "$0")/../dist/bile.user.js"
 
-# Check if userscript exists
+# Check if built userscript exists
 if [ ! -f "$USERSCRIPT_PATH" ]; then
-    echo "Error: Userscript not found at $USERSCRIPT_PATH"
+    echo "Error: Built userscript not found at $USERSCRIPT_PATH"
+    echo "Run 'npm run build' first to generate the userscript."
     exit 1
 fi
 
@@ -27,4 +28,5 @@ else
     xdg-open "file://$ABSOLUTE_PATH"
 fi
 
-echo "Tampermonkey should prompt to update the script."
+echo "Tampermonkey should prompt to install/update the script."
+echo "Built userscript size: $(du -h "$USERSCRIPT_PATH" | cut -f1)"

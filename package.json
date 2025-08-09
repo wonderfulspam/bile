@@ -1,0 +1,42 @@
+{
+  "name": "bile",
+  "version": "3.0.0", 
+  "description": "Bilingual Web Page Converter - Transform articles into interactive language learning tools",
+  "main": "dist/bile.user.js",
+  "scripts": {
+    "build": "node scripts/build-userscript.js",
+    "dev": "node scripts/build-userscript.js && scripts/open-userscript.sh",
+    "test": "node scripts/test-cli.js",
+    "clean": "rm -rf dist/"
+  },
+  "keywords": [
+    "userscript",
+    "translation", 
+    "bilingual",
+    "language-learning",
+    "greasemonkey",
+    "tampermonkey"
+  ],
+  "author": "Bile Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/user/bile"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "devDependencies": {
+    "jsdom": "^22.0.0"
+  },
+  "bile": {
+    "phase": 3,
+    "status": "in-development",
+    "features": [
+      "openrouter-integration",
+      "model-management", 
+      "failover-logic",
+      "enhanced-translation"
+    ]
+  }
+}

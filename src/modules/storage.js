@@ -14,15 +14,14 @@ const BileStorage = {
             throw new Error('Invalid API key: must be a non-empty string');
         }
 
-        // Basic API key format validation (Anthropic keys start with 'sk-ant-')
+        // Basic API key format validation (OpenRouter keys)
         const trimmedKey = key.trim();
-        if (!trimmedKey.startsWith('sk-ant-')) {
-            throw new Error('Invalid API key format: Anthropic keys should start with "sk-ant-"');
+        if (trimmedKey.length < 10) {
+            throw new Error('Invalid API key format: Key appears too short');
         }
-
-        if (trimmedKey.length < 20) {
-            throw new Error('Invalid API key: key appears to be too short');
-        }
+        
+        // Optional: More specific validation for known providers
+        // Most API keys are alphanumeric with dashes/underscores
 
         try {
             GM_setValue('bile_api_key', trimmedKey);
@@ -52,7 +51,7 @@ const BileStorage = {
     async hasApiKey() {
         try {
             const key = await this.getApiKey();
-            return key !== null && key.length > 20 && key.startsWith('sk-ant-');
+            return key !== null && key.length > 10;
         } catch (error) {
             console.error('Error checking API key:', error);
             return false;
@@ -122,6 +121,34 @@ const BileStorage = {
     },
 
     /**
+     * Generic get method for other modules
+     * @param {string} key - Storage key
+     * @returns {Promise<string|null>} Stored value or null
+     */
+    async get(key) {
+        try {
+            return GM_getValue(key, null);
+        } catch (error) {
+            console.error(`Failed to get value for key ${key}:`, error);
+            return null;
+        }
+    },
+
+    /**
+     * Generic set method for other modules
+     * @param {string} key - Storage key
+     * @param {string} value - Value to store
+     */
+    async set(key, value) {
+        try {
+            GM_setValue(key, value);
+        } catch (error) {
+            console.error(`Failed to set value for key ${key}:`, error);
+            throw new Error(`Failed to store data: ${error.message}`);
+        }
+    },
+
+    /**
      * Clear all stored data
      */
     async clearAllData() {
@@ -129,6 +156,7 @@ const BileStorage = {
             await this.clearApiKey();
             GM_deleteValue('bile_preferences');
             GM_deleteValue('bile_cached_translations');
+            GM_deleteValue('bile_model_performance');
         } catch (error) {
             throw new Error(`Failed to clear all data: ${error.message}`);
         }

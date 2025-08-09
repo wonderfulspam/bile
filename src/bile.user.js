@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Bile - Bilingual Web Page Converter
 // @namespace    https://github.com/user/bile
-// @version      0.2.1
-// @description  Convert web articles to bilingual interactive learning tools - Phase 2: Advanced Content Extraction
+// @version      3.0.0
+// @description  Convert web articles to bilingual interactive learning tools - Phase 3: OpenRouter AI Integration
 // @author       Bile Team
 // @match        https://*.bbc.com/*
 // @match        https://*.theguardian.com/*
@@ -325,7 +325,7 @@
             return key !== null && key.length > 10; // Basic validation
         },
 
-        async callClaude(content, targetLang = 'en') {
+        async translateContent(content, targetLang = 'en') {
             // Placeholder for Phase 1 - return mock response
             // Extract readable text from structured content
             let textContent = '';
@@ -418,11 +418,14 @@
 
                 // Check if API key exists
                 if (!await BileStorage.hasApiKey()) {
-                    const apiKey = prompt(`Bile needs your Anthropic Claude API key to function.
+                    const apiKey = prompt(`Bile needs your OpenRouter API key to function.
 
-Get your API key from: https://console.anthropic.com/
+Get your FREE API key from: https://openrouter.ai/keys
+- Create an account (free)
+- Generate an API key
+- No credit card required for free models!
 
-Enter your API key (starts with 'sk-ant-'):`);
+Enter your OpenRouter API key:`);
                     if (!apiKey) {
                         this.hideProcessingIndicator();
                         return;
@@ -451,7 +454,7 @@ Enter your API key (starts with 'sk-ant-'):`);
                 }
 
                 // Process content (mock for Phase 2 demo)
-                const processedContent = await BileApiClient.callClaude(contentResult.content);
+                const processedContent = await BileApiClient.translateContent(contentResult.content);
 
                 // Generate and open result
                 BileTabGenerator.openInNewTab(processedContent);
@@ -606,14 +609,16 @@ Enter your API key (starts with 'sk-ant-'):`);
         _generateContentPreview(content) {
             if (!content.content || !Array.isArray(content.content)) {
                 const text = typeof content === 'string' ? content : content.content || 'No content available';
-                return `<div>${text.substring(0, 500) + (text.length > 500 ? '...' : '')}</div>`;
+                const textStr = typeof text === 'string' ? text : String(text || '');
+                return `<div>${textStr.substring(0, 500) + (textStr.length > 500 ? '...' : '')}</div>`;
             }
 
             let html = '';
             const elementsToShow = content.content.slice(0, 5);
 
             elementsToShow.forEach(element => {
-                const text = element.text.substring(0, 200) + (element.text.length > 200 ? '...' : '');
+                const elementText = element.text || '';
+                const text = elementText.substring(0, 200) + (elementText.length > 200 ? '...' : '');
                 if (element.type === 'heading') {
                     html += `<div style="font-weight: 600; font-size: ${element.level <= 2 ? '16px' : '15px'}; color: #1f2937; margin-bottom: 8px;">${text}</div>`;
                 } else {

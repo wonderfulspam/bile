@@ -185,7 +185,7 @@
                     async testApiConnection() {
                         return await BileStorage.hasApiKey();
                     },
-                    async callClaude(content, targetLang) {
+                    async translateContent(content, targetLang) {
                         return {
                             source_language: 'de',
                             target_language: targetLang,
@@ -446,7 +446,7 @@
                 output.innerHTML += '\n✅ Step 3: Content extraction - SUCCESS';
 
                 // Step 4: Process content
-                const processed = await BileApiClient.callClaude(content, 'en');
+                const processed = await BileApiClient.translateContent(content, 'en');
                 output.innerHTML += '\n✅ Step 4: Content processing - SUCCESS';
 
                 // Step 5: Generate HTML

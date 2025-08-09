@@ -147,7 +147,7 @@ const BileUI = {
             const targetLang = preferences.targetLanguage || 'en';
 
             // Process content
-            const processedContent = await BileApiClient.callClaude(contentResult.content, targetLang);
+            const processedContent = await BileApiClient.translateContent(contentResult.content, targetLang);
 
             // Generate and open result
             BileTabGenerator.openInNewTab(processedContent);
@@ -168,11 +168,14 @@ const BileUI = {
      * @returns {Promise<boolean>} True if key was successfully stored
      */
     async _promptForApiKey() {
-        const apiKey = prompt(`Bile needs your Anthropic Claude API key to function.
+        const apiKey = prompt(`Bile needs your OpenRouter API key to function.
 
-Get your API key from: https://console.anthropic.com/
+Get your FREE API key from: https://openrouter.ai/keys
+- Create an account (free)
+- Generate an API key
+- No credit card required for free models!
 
-Enter your API key (starts with 'sk-ant-'):`);
+Enter your OpenRouter API key:`);
 
         if (!apiKey) {
             return false;
@@ -180,7 +183,7 @@ Enter your API key (starts with 'sk-ant-'):`);
 
         try {
             await BileStorage.storeApiKey(apiKey);
-            this._showSuccessMessage('API key saved successfully!');
+            this._showSuccessMessage('OpenRouter API key saved successfully!');
             return true;
         } catch (error) {
             this._showErrorMessage(`Invalid API key: ${error.message}`);
@@ -438,7 +441,8 @@ Enter your API key (starts with 'sk-ant-'):`);
                     div.style.color = '#374151';
                 }
 
-                div.textContent = element.text.substring(0, 200) + (element.text.length > 200 ? '...' : '');
+                const elementText = element.text || '';
+                div.textContent = elementText.substring(0, 200) + (elementText.length > 200 ? '...' : '');
                 contentPreview.appendChild(div);
             });
 
@@ -456,7 +460,8 @@ Enter your API key (starts with 'sk-ant-'):`);
             // Basic content fallback
             const text = typeof content === 'string' ? content : content.content || 'No content available';
             const div = document.createElement('div');
-            div.textContent = text.substring(0, 500) + (text.length > 500 ? '...' : '');
+            const textStr = typeof text === 'string' ? text : String(text || '');
+            div.textContent = textStr.substring(0, 500) + (textStr.length > 500 ? '...' : '');
             contentPreview.appendChild(div);
         }
 
