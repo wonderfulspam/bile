@@ -2,6 +2,9 @@
  * Groq API Client - Provider-specific implementation
  */
 
+// Import JsonUtils for robust JSON parsing
+const JsonUtils = require('../json-utils.js');
+
 class GroqClient {
     constructor(apiKey, options = {}) {
         this.apiKey = apiKey;
@@ -9,11 +12,14 @@ class GroqClient {
         this.timeout = options.timeout || 30000;
         this.debug = options.debug || false;
 
+        // Initialize JSON utilities
+        this.jsonUtils = new JsonUtils({ debug: this.debug });
+
         // Groq's current available models for translation (August 2025)
         this.models = [
-            'llama-3.3-70b-versatile',  // Latest Llama, best quality
-            'llama-3.1-8b-instant',     // Fast, efficient, current
-            'qwen/qwen3-32b',            // Good alternative option
+            'llama-3.3-70b-versatile',  // Latest Llama, best quality - better for structured JSON
+            'qwen/qwen3-32b',            // Good alternative option 
+            'llama-3.1-8b-instant',     // Fast but struggles with complex JSON structure
             'openai/gpt-oss-20b'        // High quality but slower/uses reasoning
         ];
 
@@ -23,28 +29,54 @@ class GroqClient {
 
     async translate(content, targetLang = 'en', options = {}) {
         const strategy = options.strategy || this.strategy;
+        let lastError = null;
 
-        if (this.debug) {
-            console.log(`Using Groq ${strategy} strategy with ${this.preferredModel}`);
-        }
+        // Try each model in order if we hit rate limits
+        for (let i = 0; i < this.models.length; i++) {
+            const currentModel = i === 0 ? this.preferredModel : this.models[i];
 
-        try {
-            switch (strategy) {
-                case 'minimal':
-                    return await this._translateMinimal(content, targetLang);
-                case 'balanced':
-                    return await this._translateBalanced(content, targetLang);
-                case 'twopass':
-                    return await this._translateTwoPass(content, targetLang);
-                default:
-                    return await this._translateMinimal(content, targetLang);
-            }
-        } catch (error) {
             if (this.debug) {
-                console.error(`Groq translation failed:`, error);
+                console.log(`Using Groq ${strategy} strategy with ${currentModel}${i > 0 ? ' (fallback)' : ''}`);
             }
-            throw error;
+
+            // Temporarily switch to the current model
+            const originalModel = this.preferredModel;
+            this.preferredModel = currentModel;
+
+            try {
+                switch (strategy) {
+                    case 'minimal':
+                        return await this._translateMinimal(content, targetLang);
+                    case 'balanced':
+                        return await this._translateBalanced(content, targetLang);
+                    case 'twopass':
+                        return await this._translateTwoPass(content, targetLang);
+                    default:
+                        return await this._translateMinimal(content, targetLang);
+                }
+            } catch (error) {
+                lastError = error;
+                this.preferredModel = originalModel; // Restore original model
+
+                if (this.debug) {
+                    console.error(`Groq translation failed with ${currentModel}:`, error.message);
+                }
+
+                // If it's a rate limit error, try the next model
+                if (error.message.includes('Rate limit exceeded') && i < this.models.length - 1) {
+                    if (this.debug) {
+                        console.log(`Rate limit hit for ${currentModel}, trying fallback model...`);
+                    }
+                    continue;
+                }
+
+                // For non-rate-limit errors or if we're out of models, throw immediately
+                throw error;
+            }
         }
+
+        // If we get here, all models failed
+        throw lastError || new Error('All Groq models failed');
     }
 
     async _translateMinimal(content, targetLang) {
@@ -92,7 +124,7 @@ class GroqClient {
 {"sl":"","tl":"${targetLang}","to":"","tt":"","content":[{"type":"paragraph","o":"","t":"","st":[{"tm":"","tr":"","eo":"","et":""}]}]}
 
 Keys: sl=source_language, tl=target_language, to=title_original, tt=title_translated, o=original, t=translated, st=slang_terms, tm=term, tr=translation, eo=explanation_original, et=explanation_translated.
-IMPORTANT: eo in SOURCE language, et in ${targetLang}. Find every unusual/creative/slang term.`
+IMPORTANT: eo in SOURCE language, et in ${targetLang}. All slang fields go ONLY inside st arrays - never outside.`
         }, {
             role: 'user',
             content: JSON.stringify(processedContent)
@@ -371,6 +403,29 @@ IMPORTANT: eo in SOURCE language, et in ${targetLang}.`
 
             if (!response.ok) {
                 const errorText = await response.text();
+
+                // Handle specific error types
+                if (response.status === 429) {
+                    let errorDetails = '';
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        if (errorData.error && errorData.error.message) {
+                            errorDetails = errorData.error.message;
+
+                            // Extract retry time if available
+                            const retryMatch = errorDetails.match(/try again in (\d+[hms][\d.]*[hms]*)/);
+                            if (retryMatch) {
+                                throw new Error(`Rate limit exceeded for Groq. ${errorDetails}. Please try again in ${retryMatch[1]}.`);
+                            }
+                        }
+                    } catch (parseError) {
+                        // If JSON parsing fails, use the raw error text
+                        errorDetails = errorText;
+                    }
+
+                    throw new Error(`Rate limit exceeded for Groq${errorDetails ? ': ' + errorDetails : '. Please wait before retrying.'}`);
+                }
+
                 throw new Error(`Groq API error ${response.status}: ${errorText}`);
             }
 
@@ -469,69 +524,25 @@ IMPORTANT: eo in SOURCE language, et in ${targetLang}.`
             cleanContent = content.replace(/```\n?/g, '');
         }
 
-        // Handle models that return explanatory text with embedded JSON
-        if (content.includes('Here') || content.includes('JSON format:') || content.includes('translation')) {
-            // Try to find the first complete JSON object in the response
-            const lines = cleanContent.split('\n');
-            let jsonStartIndex = -1;
-            let jsonEndIndex = -1;
-            let braceCount = 0;
+        // Use JsonUtils for robust JSON parsing with automatic extraction and repair
+        const parsed = this.jsonUtils.parseRobustly(cleanContent);
 
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (line.startsWith('{') && jsonStartIndex === -1) {
-                    jsonStartIndex = i;
-                    braceCount = 1;
-                } else if (jsonStartIndex !== -1) {
-                    // Count braces to find the end of JSON object
-                    for (const char of line) {
-                        if (char === '{') braceCount++;
-                        else if (char === '}') braceCount--;
-                    }
+        if (!parsed) {
+            // If JsonUtils couldn't parse it, provide detailed error reporting
+            this.jsonUtils.reportParsingError(
+                new Error('Failed to parse JSON with all available methods'),
+                cleanContent,
+                { saveDebugFile: true }
+            );
 
-                    if (braceCount === 0) {
-                        jsonEndIndex = i;
-                        break;
-                    }
-                }
+            if (response.usage) {
+                console.error('Token usage:', response.usage);
             }
 
-            if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
-                cleanContent = lines.slice(jsonStartIndex, jsonEndIndex + 1).join('\n');
-                if (this.debug) {
-                    console.log('Extracted JSON from explanatory response using line parsing');
-                }
-            } else {
-                // Fallback: try to fix incomplete JSON
-                let jsonMatch = content.match(/{"source_language"[\s\S]*"content":\s*\[[\s\S]*$/);
-                if (jsonMatch) {
-                    let jsonStr = jsonMatch[0];
-
-                    // Try to close incomplete JSON structures
-                    if (!jsonStr.endsWith('}')) {
-                        // Count open braces and brackets to determine what to close
-                        const openBraces = (jsonStr.match(/{/g) || []).length - (jsonStr.match(/}/g) || []).length;
-                        const openBrackets = (jsonStr.match(/\[/g) || []).length - (jsonStr.match(/\]/g) || []).length;
-
-                        // Close brackets and braces
-                        jsonStr += ']'.repeat(Math.max(0, openBrackets));
-                        jsonStr += '}'.repeat(Math.max(0, openBraces));
-
-                        if (this.debug) {
-                            console.log('Attempted to fix incomplete JSON');
-                        }
-                    }
-
-                    cleanContent = jsonStr;
-                    if (this.debug) {
-                        console.log('Extracted JSON using regex fallback');
-                    }
-                }
-            }
+            throw new Error('Failed to parse Groq response: All JSON parsing methods exhausted');
         }
 
         try {
-            const parsed = JSON.parse(cleanContent);
             const expanded = this._expandAbbreviatedJson(parsed);
             return {
                 ...expanded,
@@ -543,13 +554,20 @@ IMPORTANT: eo in SOURCE language, et in ${targetLang}.`
                     translatedAt: new Date().toISOString()
                 }
             };
-        } catch (error) {
-            console.error('Failed to parse JSON. Raw content:', content);
-            console.error('Clean content:', cleanContent);
-            if (response.usage) {
-                console.error('Token usage:', response.usage);
-            }
-            throw new Error(`Failed to parse Groq response: ${error.message}`);
+        } catch (expansionError) {
+            console.error('Failed to expand abbreviated JSON:', expansionError.message);
+            // Return the parsed JSON even if expansion fails
+            return {
+                ...parsed,
+                metadata: {
+                    provider: 'groq',
+                    model: this.preferredModel,
+                    strategy: strategy,
+                    usage: response.usage,
+                    translatedAt: new Date().toISOString(),
+                    expansionFailed: true
+                }
+            };
         }
     }
 
@@ -589,6 +607,7 @@ IMPORTANT: eo in SOURCE language, et in ${targetLang}.`
             }
         };
     }
+
 
     async testConnection() {
         try {

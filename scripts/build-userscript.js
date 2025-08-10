@@ -25,6 +25,7 @@ const BUILD_CONFIG = {
         'browser/config.js',
         // Core modules (runtime-agnostic)
         'core/utils.js',
+        'core/json-utils.js',  // Must come before providers that use it
         'core/site-rules.js',  // Must come before content-extractor
         'core/content-extractor.js', // Uses site-rules
         // Provider clients (must come before api-client)

@@ -6,7 +6,8 @@
   "scripts": {
     "build": "node scripts/build-userscript.js",
     "dev": "node scripts/build-userscript.js && scripts/open-userscript.sh",
-    "test": "node --env-file=.env test/cli.js",
+    "test": "node test/test-runner.js --env",
+    "test:unit": "node test/test-runner.js",
     "test:performance": "node --env-file=.env test/performance-test.js",
     "clean": "rm -rf dist/"
   },
