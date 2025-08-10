@@ -13,6 +13,10 @@ While the name **M**ultilingual **I**ntelligent **L**earning **F**riend would mo
 
 Click 🌐 button on supported sites → get bilingual article in new tab.
 
+![Bile in action](bile.png)
+
+*Example output from processing a taz.de article: https://taz.de/Wolfram-Weimers-Gender-Verbot/!6101942/*
+
 ## Quick Start
 
 **Browser userscript:**
