@@ -40,6 +40,7 @@ node scripts/build-userscript.js
 ### Output
 
 The build process creates:
+
 - `dist/bile.user.js` - Combined userscript ready for installation
 - File size: ~230KB (contains all modules)
 - Automatically increments version numbers
@@ -131,14 +132,17 @@ bile/
 ### Common Issues
 
 **"Module not found" warnings**
+
 - Some optional modules may not exist yet
 - Build continues with available modules
 
 **Node.js errors**
+
 - Ensure Node.js 16+ is installed
 - Check file permissions on script files
 
 **Large file size**
+
 - Expected for modular architecture
 - Modern browsers handle 200KB+ userscripts fine
 - Consider module splitting for very large codebases
@@ -146,6 +150,7 @@ bile/
 ### Build Configuration
 
 Edit `scripts/build-userscript.js` to customize:
+
 - Module loading order
 - Output file location  
 - Processing rules

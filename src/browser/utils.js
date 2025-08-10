@@ -1,32 +1,10 @@
 /**
- * Bile Utilities Module
- * Shared constants, helper functions, and utilities
+ * Bile Browser Utilities Module
+ * Browser-specific helper functions for userscript environment
  */
 
-const BileUtils = {
-    // API Configuration
-    API_ENDPOINTS: {
-        ANTHROPIC: 'https://api.anthropic.com/v1/messages',
-        ANTHROPIC_VERSION: '2023-06-01'
-    },
-
-    // Supported languages with metadata
-    SUPPORTED_LANGUAGES: {
-        'en': { name: 'English', flag: '🇺🇸', rtl: false },
-        'de': { name: 'Deutsch', flag: '🇩🇪', rtl: false },
-        'es': { name: 'Español', flag: '🇪🇸', rtl: false },
-        'fr': { name: 'Français', flag: '🇫🇷', rtl: false },
-        'it': { name: 'Italiano', flag: '🇮🇹', rtl: false },
-        'pt': { name: 'Português', flag: '🇵🇹', rtl: false },
-        'ru': { name: 'Русский', flag: '🇷🇺', rtl: false },
-        'ja': { name: '日本語', flag: '🇯🇵', rtl: false },
-        'ko': { name: '한국어', flag: '🇰🇷', rtl: false },
-        'zh': { name: '中文', flag: '🇨🇳', rtl: false },
-        'ar': { name: 'العربية', flag: '🇸🇦', rtl: true },
-        'hi': { name: 'हिन्दी', flag: '🇮🇳', rtl: false }
-    },
-
-    // UI Selectors for common article elements (use shared constants)
+const BileBrowserUtils = {
+    // UI Selectors for common article elements (browser-specific)
     get UI_SELECTORS() {
         if (typeof window !== 'undefined' && window.BileConstants) {
             return window.BileConstants.UI_SELECTORS;
@@ -42,45 +20,8 @@ const BileUtils = {
         };
     },
 
-    // Configuration constants
-    CONFIG: {
-        MAX_CONTENT_LENGTH: 50000, // Characters
-        MAX_PARAGRAPHS: 20,
-        MIN_PARAGRAPH_LENGTH: 20,
-        API_TIMEOUT: 30000, // 30 seconds
-        RETRY_ATTEMPTS: 3,
-        RETRY_DELAY: 1000, // 1 second
-        BUTTON_POSITION_DEFAULT: 'top-right',
-        TARGET_LANGUAGE_DEFAULT: 'en'
-    },
-
     /**
-     * Enhanced logging with different levels
-     * @param {string} message - Log message
-     * @param {string} level - Log level (debug, info, warn, error)
-     * @param {Object} data - Additional data to log
-     */
-    debugLog(message, level = 'info', data = null) {
-        const timestamp = new Date().toISOString();
-        const prefix = `[Bile ${level.toUpperCase()}] ${timestamp}`;
-
-        // Use Greasemonkey logging if available
-        if (typeof GM_log !== 'undefined') {
-            GM_log(`${prefix}: ${message}`);
-        }
-
-        // Also use console with appropriate method
-        const consoleMethod = console[level] || console.log;
-        consoleMethod(`${prefix}: ${message}`, data || '');
-
-        // Store critical errors for debugging
-        if (level === 'error') {
-            this._storeErrorLog(message, data);
-        }
-    },
-
-    /**
-     * Store error logs for debugging
+     * Store error logs for debugging (browser-specific)
      * @private
      */
     _storeErrorLog(message, data) {
@@ -105,36 +46,28 @@ const BileUtils = {
     },
 
     /**
-     * Validate URL format
-     * @param {string} url - URL to validate
-     * @returns {boolean} True if valid URL
+     * Enhanced logging with different levels (browser-specific with GM support)
+     * @param {string} message - Log message
+     * @param {string} level - Log level (debug, info, warn, error)
+     * @param {Object} data - Additional data to log
      */
-    isValidUrl(url) {
-        if (!url || typeof url !== 'string') return false;
+    debugLog(message, level = 'info', data = null) {
+        const timestamp = new Date().toISOString();
+        const prefix = `[Bile ${level.toUpperCase()}] ${timestamp}`;
 
-        try {
-            const urlObj = new URL(url);
-            return ['http:', 'https:'].includes(urlObj.protocol);
-        } catch {
-            return false;
+        // Use Greasemonkey logging if available
+        if (typeof GM_log !== 'undefined') {
+            GM_log(`${prefix}: ${message}`);
         }
-    },
 
-    /**
-     * Sanitize HTML content to prevent XSS
-     * @param {string} html - HTML content to sanitize
-     * @returns {string} Sanitized HTML
-     */
-    sanitizeHtml(html) {
-        if (!html || typeof html !== 'string') return '';
+        // Also use console with appropriate method
+        const consoleMethod = console[level] || console.log;
+        consoleMethod(`${prefix}: ${message}`, data || '');
 
-        return html
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#x27;')
-            .replace(/\//g, '&#x2F;');
+        // Store critical errors for debugging
+        if (level === 'error') {
+            this._storeErrorLog(message, data);
+        }
     },
 
     /**
@@ -145,37 +78,9 @@ const BileUtils = {
         const lang = navigator.language || navigator.userLanguage || 'en';
         const langCode = lang.split('-')[0].toLowerCase();
 
-        // Return language if supported, otherwise default to English
-        return this.SUPPORTED_LANGUAGES[langCode] ? langCode : 'en';
-    },
-
-    /**
-     * Detect language from text content using common word patterns
-     * @param {string} text - Text to analyze
-     * @returns {string} Detected language code
-     */
-    detectLanguage(text) {
-        if (!text || typeof text !== 'string') return 'en';
-
-        const patterns = {
-            'en': /\b(the|and|or|but|in|on|at|to|for|of|with|by|is|are|was|were|a|an)\b/gi,
-            'de': /\b(der|die|das|und|oder|aber|in|auf|an|zu|für|von|mit|bei|ist|sind)\b/gi,
-            'fr': /\b(le|la|les|et|ou|mais|dans|sur|à|pour|de|avec|par|est|sont)\b/gi,
-            'es': /\b(el|la|los|las|y|o|pero|en|sobre|a|para|de|con|por|es|son)\b/gi
-        };
-
-        let maxMatches = 0;
-        let detectedLang = 'en';
-
-        Object.entries(patterns).forEach(([lang, pattern]) => {
-            const matches = (text.match(pattern) || []).length;
-            if (matches > maxMatches) {
-                maxMatches = matches;
-                detectedLang = lang;
-            }
-        });
-
-        return detectedLang;
+        // Use core utils for language support check
+        const coreUtils = window.BileCoreUtils || require('../core/utils.js');
+        return coreUtils.SUPPORTED_LANGUAGES[langCode] ? langCode : 'en';
     },
 
     /**
@@ -257,37 +162,6 @@ const BileUtils = {
     },
 
     /**
-     * Debounce function calls
-     * @param {Function} func - Function to debounce
-     * @param {number} delay - Delay in milliseconds
-     * @returns {Function} Debounced function
-     */
-    debounce(func, delay) {
-        let timeoutId;
-        return function (...args) {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => func.apply(this, args), delay);
-        };
-    },
-
-    /**
-     * Throttle function calls
-     * @param {Function} func - Function to throttle
-     * @param {number} delay - Delay in milliseconds
-     * @returns {Function} Throttled function
-     */
-    throttle(func, delay) {
-        let inThrottle;
-        return function (...args) {
-            if (!inThrottle) {
-                func.apply(this, args);
-                inThrottle = true;
-                setTimeout(() => inThrottle = false, delay);
-            }
-        };
-    },
-
-    /**
      * Wait for element to appear in DOM
      * @param {string} selector - CSS selector
      * @param {number} timeout - Timeout in milliseconds
@@ -319,56 +193,6 @@ const BileUtils = {
                 reject(new Error(`Element ${selector} not found within ${timeout}ms`));
             }, timeout);
         });
-    },
-
-    /**
-     * Get text content length in words
-     * @param {string} text - Text to count
-     * @returns {number} Word count
-     */
-    getWordCount(text) {
-        if (!text || typeof text !== 'string') return 0;
-
-        return text
-            .trim()
-            .split(/\s+/)
-            .filter(word => word.length > 0)
-            .length;
-    },
-
-    /**
-     * Estimate reading time in minutes
-     * @param {string} text - Text to analyze
-     * @param {number} wordsPerMinute - Reading speed (default: 200)
-     * @returns {number} Estimated reading time in minutes
-     */
-    estimateReadingTime(text, wordsPerMinute = 200) {
-        const wordCount = this.getWordCount(text);
-        return Math.ceil(wordCount / wordsPerMinute);
-    },
-
-    /**
-     * Format file size for display
-     * @param {number} bytes - Size in bytes
-     * @returns {string} Formatted size
-     */
-    formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    },
-
-    /**
-     * Generate unique ID
-     * @param {string} prefix - ID prefix
-     * @returns {string} Unique ID
-     */
-    generateId(prefix = 'bile') {
-        return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     },
 
     /**
@@ -442,7 +266,8 @@ const BileUtils = {
         const htmlLang = document.documentElement.lang;
         if (htmlLang) {
             const langCode = htmlLang.split('-')[0].toLowerCase();
-            if (this.SUPPORTED_LANGUAGES[langCode]) {
+            const coreUtils = window.BileCoreUtils || require('../core/utils.js');
+            if (coreUtils.SUPPORTED_LANGUAGES[langCode]) {
                 return langCode;
             }
         }
@@ -451,7 +276,8 @@ const BileUtils = {
         const metaLang = document.querySelector('meta[http-equiv="content-language"]')?.content;
         if (metaLang) {
             const langCode = metaLang.split('-')[0].toLowerCase();
-            if (this.SUPPORTED_LANGUAGES[langCode]) {
+            const coreUtils = window.BileCoreUtils || require('../core/utils.js');
+            if (coreUtils.SUPPORTED_LANGUAGES[langCode]) {
                 return langCode;
             }
         }
@@ -517,5 +343,5 @@ const BileUtils = {
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = BileUtils;
+    module.exports = BileBrowserUtils;
 }

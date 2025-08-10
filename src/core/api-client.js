@@ -3,22 +3,49 @@
  * Lean OpenRouter API client focused purely on API communication
  */
 
-// BileConstants is available globally from constants.js in userscript build
-// For Node.js usage, manually require constants.js before using this module
+// Load core configuration and utilities
+const BileCoreConfig = (typeof require !== 'undefined') ? require('./config.js') : null;
+const BileCoreUtils = (typeof require !== 'undefined') ? require('./utils.js') : null;
 
 class BileCoreApiClient {
     constructor(apiKey, options = {}) {
         this.apiKey = apiKey;
-        this.apiUrl = options.apiUrl || BileConstants.API.BASE_URL;
-        this.timeout = options.timeout || BileConstants.API.TIMEOUT;
+        
+        // Use core config or browser globals
+        const apiConfig = this._getApiConfig();
+        this.apiUrl = options.apiUrl || apiConfig.BASE_URL;
+        this.timeout = options.timeout || apiConfig.TIMEOUT;
         this.debug = options.debug || false;
         
         // Track current model for retry logic
         this.currentModelIndex = 0;
     }
 
+    _getApiConfig() {
+        if (BileCoreConfig) {
+            return BileCoreConfig.API;
+        } else if (typeof BileConstants !== 'undefined') {
+            return BileConstants.API;
+        } else if (BileCoreUtils) {
+            return BileCoreUtils.API_CONFIG;
+        }
+        // Fallback
+        return {
+            BASE_URL: 'https://openrouter.ai/api/v1/chat/completions',
+            TIMEOUT: 30000
+        };
+    }
+
     static get FREE_MODELS() {
-        return BileConstants.FREE_MODELS;
+        if (BileCoreConfig) {
+            return BileCoreConfig.FREE_MODELS;
+        } else if (typeof BileConstants !== 'undefined') {
+            return BileConstants.FREE_MODELS;
+        } else if (BileCoreUtils) {
+            return BileCoreUtils.FREE_MODELS;
+        }
+        // Fallback
+        return ['meta-llama/llama-3.1-8b-instruct:free'];
     }
 
     /**
@@ -44,7 +71,7 @@ class BileCoreApiClient {
             }
 
             const response = await this._makeRequest({
-                model: BileConstants.FREE_MODELS[0],
+                model: this.constructor.FREE_MODELS[0],
                 messages: [{ role: 'user', content: 'Hello' }],
                 max_tokens: 5
             });

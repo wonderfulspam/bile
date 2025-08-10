@@ -293,10 +293,12 @@ const requestBody = {
 ## Phase Dependencies
 
 **Previous Phases:**
+
 - **Phase 2**: Structured content extraction provides translation input
 - **Phase 1**: Core infrastructure handles UI and storage
 
 **Future Phases:**
+
 - **Phase 4**: Enhanced HTML generation will use translation output
 - **Phase 5**: User settings will configure translation preferences
 - **Phase 6**: Export features will include translated content

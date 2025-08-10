@@ -1,0 +1,43 @@
+  1. Duplicated API Client Logic
+
+
+   * Issue: src/core/api-client.js and src/modules/api-client.js contain redundant logic for OpenRouter API communication.
+   * Recommendation: Merge the feature-rich src/modules/api-client.js into the runtime-agnostic src/core/api-client.js, making it the single source of truth.
+     Non-API responsibilities like model selection, prompt building, and UI updates should be moved to their respective modules.
+
+  2. Duplicated Translator Logic
+
+
+   * Issue: src/core/translator.js and src/modules/translation-engine.js have overlapping responsibilities.
+   * Recommendation: Merge the advanced features from src/modules/translation-engine.js into src/core/translator.js and rename it to BileTranslationEngine to
+     better reflect its role in orchestrating the translation process.
+
+
+  3. Redundant Language Detection
+
+
+   * Issue: Language detection logic is scattered across BileUtils.detectLanguage, BileContentAnalyzer.detectLanguageAdvanced, and
+     BileApiClient._detectLanguage.
+   * Recommendation: Consolidate all language detection into the more sophisticated BileContentAnalyzer.detectLanguageAdvanced and have all other modules use
+     it.
+
+  4. Poor Separation of Concerns in BileApiClient
+
+
+   * Issue: src/modules/api-client.js handles model selection, prompt building, and UI interactions, which are outside the scope of an API client.
+   * Recommendation: Move model selection to BileModelManager, prompt building to BileTranslationEngine, and decouple all UI interactions by using
+     promise-based flows and typed errors that the UI layer can handle.
+
+  Summary of Proposed Refactoring
+
+
+   1. Delete `src/modules/api-client.js` and `src/modules/translation-engine.js`.
+   2. Merge their logic into `src/core/api-client.js` and `src/core/translator.js` respectively.
+   3. Rename `src/core/translator.js` to `src/core/translation-engine.js` and the class to `BileTranslationEngine`.
+   4. Refactor `BileCoreApiClient` to be a lean, runtime-agnostic API client.
+   5. Centralize responsibilities: model selection in BileModelManager, prompt building and orchestration in BileTranslationEngine, and language detection in
+      BileContentAnalyzer.
+   6. Decouple core logic from the UI by removing direct BileUI calls from core modules.
+
+
+  This refactoring will create a cleaner, more maintainable codebase with better-separated concerns and no code duplication.

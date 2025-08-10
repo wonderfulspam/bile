@@ -7,11 +7,13 @@ Phase 1 establishes the core infrastructure for the Bile bilingual web page conv
 ## Technical Decisions
 
 ### Browser Support
+
 - **Primary targets**: Firefox and Chrome (desktop and mobile)
 - **Userscript manager compatibility**: Tampermonkey/Greasemonkey/Violentmonkey
 - **Fallback**: Bookmarklet version for browsers without userscript support
 
 ### Architecture Approach
+
 - **Modular design**: Separate concerns into focused modules
 - **Progressive enhancement**: Core functionality works, enhanced features degrade gracefully
 - **Security-first**: API keys stored securely, content sanitized
@@ -34,6 +36,7 @@ src/
 ## Key Function Signatures
 
 ### Main Entry Point (`bile.user.js`)
+
 ```javascript
 // Main initialization function
 async function initializeBile() -> void
@@ -46,6 +49,7 @@ function addTriggerButton() -> void
 ```
 
 ### Storage Module (`modules/storage.js`)
+
 ```javascript
 // Store API key securely
 async function storeApiKey(key: string) -> Promise<void>
@@ -61,6 +65,7 @@ async function clearApiKey() -> Promise<void>
 ```
 
 ### API Client Module (`modules/api-client.js`)
+
 ```javascript
 // Test API connectivity
 async function testApiConnection() -> Promise<boolean>
@@ -73,6 +78,7 @@ function handleApiError(error: Error) -> void
 ```
 
 ### UI Trigger Module (`modules/ui-trigger.js`)
+
 ```javascript
 // Create and inject trigger button
 function createTriggerButton() -> HTMLElement
@@ -88,6 +94,7 @@ function showProcessingIndicator() -> void
 ```
 
 ### Tab Generator Module (`modules/tab-generator.js`)
+
 ```javascript
 // Generate basic HTML structure
 function generateBasicHtml(content: object) -> string
@@ -100,6 +107,7 @@ function createPlaceholderContent() -> object
 ```
 
 ### Utils Module (`modules/utils.js`)
+
 ```javascript
 // Constants
 const API_ENDPOINTS = { ... }
@@ -115,30 +123,35 @@ function sanitizeHtml(html: string) -> string
 ## Implementation Tasks
 
 ### Task 1: Userscript Boilerplate
+
 - Create `bile.user.js` with proper Tampermonkey headers
 - Set up module loading pattern
 - Implement site detection for news articles/blogs
 - Add basic error handling and logging
 
 ### Task 2: Secure API Key Storage
+
 - Implement `storage.js` using GM_setValue/GM_getValue or browser storage APIs
 - Create first-run setup flow for API key entry
 - Add validation for API key format
 - Implement secure key retrieval pattern
 
 ### Task 3: Basic API Integration
+
 - Create `api-client.js` with Anthropic Claude API structure
 - Implement basic POST request handling
 - Add timeout and retry logic
 - Create placeholder response for testing
 
 ### Task 4: UI Trigger System
+
 - Design and implement trigger button UI
 - Position button appropriately on different sites
 - Add keyboard shortcut support (Ctrl+Shift+B)
 - Implement visual feedback during processing
 
 ### Task 5: New Tab Generation
+
 - Create `tab-generator.js` for HTML generation
 - Design basic HTML template structure
 - Implement new tab opening mechanism
@@ -147,12 +160,14 @@ function sanitizeHtml(html: string) -> string
 ## Testing Strategy
 
 ### Test Sites
+
 - **German**: taz.de, spiegel.de, zeit.de
 - **Spanish**: elpais.com, elmundo.es
 - **French**: lemonde.fr, lefigaro.fr
 - **English**: bbc.com, theguardian.com
 
 ### Test Scenarios
+
 1. **Button injection**: Verify trigger appears on article pages
 2. **API key storage**: Test first-run setup and key persistence
 3. **New tab creation**: Ensure tab opens with placeholder content
@@ -162,15 +177,15 @@ function sanitizeHtml(html: string) -> string
 ## Implementation Status: ✅ COMPLETED
 
 ### Phase 1 Deliverables ✅
-* ✅ Complete userscript infrastructure (`src/bile.user.js`)
-* ✅ Secure API key storage system (`src/modules/storage.js`)
-* ✅ Basic API integration with mock responses (`src/modules/api-client.js`)
-* ✅ UI trigger system with button and keyboard shortcuts (`src/modules/ui-trigger.js`)
-* ✅ Bilingual HTML generation and new tab creation (`src/modules/tab-generator.js`)
-* ✅ Comprehensive utilities and helper functions (`src/modules/utils.js`)
-* ✅ Tampermonkey configuration and supported sites (`src/config/`)
-* ✅ Test runner for validation (`src/test-runner.html`)
-* ✅ Complete documentation (`src/README.md`)
+- ✅ Complete userscript infrastructure (`src/bile.user.js`)
+- ✅ Secure API key storage system (`src/modules/storage.js`)
+- ✅ Basic API integration with mock responses (`src/modules/api-client.js`)
+- ✅ UI trigger system with button and keyboard shortcuts (`src/modules/ui-trigger.js`)
+- ✅ Bilingual HTML generation and new tab creation (`src/modules/tab-generator.js`)
+- ✅ Comprehensive utilities and helper functions (`src/modules/utils.js`)
+- ✅ Tampermonkey configuration and supported sites (`src/config/`)
+- ✅ Test runner for validation (`src/test-runner.html`)
+- ✅ Complete documentation (`src/README.md`)
 
 ### Success Criteria Met ✅
 
@@ -185,12 +200,14 @@ function sanitizeHtml(html: string) -> string
 ## Security Considerations
 
 ### API Key Protection
+
 - Never log API keys to console
 - Use secure browser storage APIs (GM_setValue or browser.storage.local)
 - Validate key format before storage
 - Clear key on uninstall/disable
 
 ### Content Security
+
 - Sanitize any user input
 - Use textContent instead of innerHTML where possible
 - Validate URLs before opening new tabs
@@ -199,6 +216,7 @@ function sanitizeHtml(html: string) -> string
 ## Next Phase Preparation
 
 Phase 1 establishes the foundation for:
+
 - **Phase 2**: Content extraction will use the trigger system
 - **Phase 3**: Language processing will use the API client
 - **Phase 4**: HTML generation will extend the tab generator

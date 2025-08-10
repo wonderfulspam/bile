@@ -7,7 +7,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const BileConstants = require('../src/config/constants.js');
+const BileCoreConfig = require('../src/core/config.js');
+const BileBrowserConfig = require('../src/browser/config.js');
 
 const BUILD_CONFIG = {
     // Source directory
@@ -18,22 +19,24 @@ const BUILD_CONFIG = {
     
     // Modules to include (in dependency order)
     modules: [
-        'config/userscript-header.js',
-        'config/constants.js', // Include shared constants first
-        'modules/utils.js',
-        // Browser modules for userscript functionality
-        'browser/storage.js',
-        'config/model-config.js',
-        'modules/model-manager.js',
-        // Core modules with consolidated logic
+        'browser/userscript-header.js',
+        // Configuration (core first, then browser)
+        'core/config.js',
+        'browser/config.js',
+        // Core modules (runtime-agnostic)
+        'core/utils.js',
         'core/api-client.js',
         'core/translation-engine.js',
-        'modules/content-analyzer.js', 
-        'config/site-rules.js',
-        'modules/content-extractor.js',
-        'modules/tab-generator.js',
-        'modules/ui-trigger.js',
-        'bile.user.js'
+        'core/content-analyzer.js', 
+        'core/model-manager.js',
+        'core/model-config.js',
+        // Browser modules for userscript functionality
+        'browser/utils.js',
+        'browser/storage.js',
+        'browser/content-extractor.js',
+        'browser/tab-generator.js',
+        'browser/ui-trigger.js',
+        'browser/site-rules.js'
     ],
     
     // Files to skip during concatenation
@@ -134,14 +137,21 @@ class UserscriptBuilder {
             content = content.replace(/^\s*else if \(typeof window !== 'undefined'\) \{[\s\S]*?\}/gm, '');
         }
         
-        // For the main bile.user.js file, extract only the core logic
-        if (modulePath === 'bile.user.js') {
-            content = this.extractMainLogic(content);
-        }
+        // Note: bile.user.js has been removed - build system now generates everything from components
         
         // For userscript header, extract just the header
-        if (modulePath === 'config/userscript-header.js') {
+        if (modulePath === 'browser/userscript-header.js') {
             content = this.extractUserscriptHeader(content);
+        }
+        
+        // For browser config, generate the combined constants
+        if (modulePath === 'browser/config.js') {
+            content += `
+// Generate combined BileConstants for browser compatibility
+if (typeof BileCoreConfig !== 'undefined' && typeof BileBrowserConfig !== 'undefined') {
+    window.BileConstants = BileBrowserConfig.createBrowserConstants(BileCoreConfig);
+}
+`;
         }
         
         return content;
@@ -256,7 +266,7 @@ function initializeBile() {
  * Built: ${timestamp}
  * Version: ${this.version}
  * 
-${BileConstants.GENERATED_FILE_HEADER.trim()}
+${BileBrowserConfig.GENERATED_FILE_HEADER.trim()}
  */
 
 `;

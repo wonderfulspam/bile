@@ -1,0 +1,33 @@
+  Analysis for CLI Reusability
+
+   * `core/`: Contains modules with zero dependency on a browser environment. (Reusable by CLI)
+       * api-client.js
+       * translation-engine.js
+
+
+   * `modules/`: This is currently a mix of reusable logic and browser-specific code, which is the problem.
+       * content-analyzer.js: Potentially reusable. The logic is abstract, but it would need a DOM-like structure to be passed to it (e.g., from a library
+         like jsdom in the CLI).
+       * model-manager.js: Reusable. The logic is abstract.
+       * content-extractor.js: Browser-only. Heavily uses document and window.
+       * tab-generator.js: Browser-only. Generates HTML for a browser tab.
+       * ui-trigger.js: Browser-only. Manages the in-page button.
+       * utils.js: A mix. Some functions are pure logic (getWordCount), others are browser-specific (isMobileDevice).
+
+  Proposed Refactoring
+
+  To create a clear separation for the future CLI, I will perform the following refactoring:
+
+
+   1. Move Browser-Only Modules: I will move all modules that depend on the browser environment from src/modules/ into src/browser/.
+   2. Split `utils.js`: I will split src/modules/utils.js into two new files:
+       * src/core/utils.js: For reusable, environment-agnostic functions.
+       * src/browser/utils.js: For browser-specific utility functions.
+   3. Consolidate Reusable Logic: The remaining reusable modules from src/modules/ (content-analyzer.js, model-manager.js) will be moved into src/core/.
+   4. Delete `src/modules/`: The modules directory will be empty and can be removed.
+
+  This will result in a much cleaner architecture:
+
+
+   * src/core/: The shared, environment-agnostic engine for both the userscript and the future CLI.
+   * src/browser/: All code that is specific to the userscript and runs in the browser.

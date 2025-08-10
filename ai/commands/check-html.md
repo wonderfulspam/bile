@@ -17,6 +17,7 @@ Validates and lints HTML files using the `tidy` command-line tool.
 ## Prerequisites
 
 Requires `tidy` to be installed:
+
 - **Ubuntu/Debian**: `sudo apt-get install tidy`
 - **macOS**: `brew install tidy-html5`
 - **CentOS/RHEL**: `sudo yum install tidy`
@@ -24,11 +25,13 @@ Requires `tidy` to be installed:
 ## Usage
 
 ### Check all HTML files
+
 ```bash
 ./ai/commands/check-html.sh
 ```
 
 ### Check specific files
+
 ```bash
 ./ai/commands/check-html.sh file1.html file2.html
 ```

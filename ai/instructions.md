@@ -8,13 +8,35 @@ This file provides guidance to coding agents like `claude` or `gemini` when work
 
 Bile is a bilingual web page converter for language learning using OpenRouter's free AI models. For complete project details, architecture, and implementation roadmap, see [SPECIFICATION.md](SPECIFICATION.md).
 
-## Key File Locations
+## Key File Locations for AI Development
 
-- **[../SPECIFICATION.md](../SPECIFICATION.md)** - Complete technical specification and implementation details
-- **[../README.md](../README.md)** - Project overview and documentation index
-- **[plans/STATUS.md](plans/STATUS.md)** - Current state of implementation.
-- **[commands/COMMANDS.md](commands/COMMANDS.md)** - Overview of commands you should leverage
-- **[docs/INDEX.md](docs/INDEX.md)** - Overview of documents relevant for development
+**Core Implementation (CLI-ready modules):**
+
+- **[../src/core/](../src/core/)** - Runtime-agnostic modules for CLI and browser
+  - `config.js` - Shared constants, API settings, language support
+  - `api-client.js` - OpenRouter API communication
+  - `translation-engine.js` - Translation logic and quality assessment
+  - `content-analyzer.js` - Content structure analysis
+  - `model-manager.js` - Model selection and performance tracking
+
+**Browser-specific Implementation:**
+
+- **[../src/browser/](../src/browser/)** - Browser-only functionality
+  - `content-extractor.js` - DOM parsing and article detection
+  - `site-rules.js` - Site-specific extraction rules
+  - `ui-trigger.js` - Button and modal interfaces
+
+**Development Tools:**
+
+- **[../src/cli.js](../src/cli.js)** - CLI entry point for testing
+- **[../scripts/test-cli.js](../scripts/test-cli.js)** - CLI test suite
+- **[../scripts/build-userscript.js](../scripts/build-userscript.js)** - Build system
+
+**Documentation & Status:**
+
+- **[../SPECIFICATION.md](../SPECIFICATION.md)** - Technical specification
+- **[plans/STATUS.md](plans/STATUS.md)** - Current implementation state
+- **[commands/COMMANDS.md](commands/COMMANDS.md)** - Available npm/CLI commands
 
 ## Development Approach
 

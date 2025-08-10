@@ -3,11 +3,13 @@
 ## Node.js Testing Environment
 
 ### 1. Mock Browser Environment
+
 - Use `jsdom` to simulate browser DOM and global objects
 - Mock `localStorage`, `fetch`, and userscript GM functions
 - Create test harness that loads all modules in Node.js context
 
 ### 2. API Client Testing
+
 ```javascript
 // Example test structure
 const BileApiClient = require('./src/modules/api-client.js');
@@ -21,11 +23,13 @@ global.localStorage = { getItem: () => null, setItem: () => {} };
 ```
 
 ### 3. Model Management Testing
+
 - Test model selection algorithms with various language/content combinations
 - Validate performance tracking and failover logic
 - Simulate different API response scenarios (success, failure, timeout)
 
 ### 4. Content Processing Pipeline
+
 - Test full extraction → translation → HTML generation pipeline
 - Use sample article HTML files as test inputs
 - Validate output HTML structure and bilingual content
@@ -33,6 +37,7 @@ global.localStorage = { getItem: () => null, setItem: () => {} };
 ## CLI Test Runner Ideas
 
 ### 1. Interactive Test Mode
+
 ```bash
 node test-cli.js --interactive
 # Prompts for:
@@ -43,6 +48,7 @@ node test-cli.js --interactive
 ```
 
 ### 2. Batch Testing Mode
+
 ```bash
 node test-cli.js --batch tests/samples/
 # Processes all HTML files in directory
@@ -51,6 +57,7 @@ node test-cli.js --batch tests/samples/
 ```
 
 ### 3. Model Benchmark Mode
+
 ```bash
 node test-cli.js --benchmark --models=llama,mistral --content=sample.txt
 # Tests specific models against same content
@@ -59,6 +66,7 @@ node test-cli.js --benchmark --models=llama,mistral --content=sample.txt
 ```
 
 ### 4. API Integration Testing
+
 ```bash
 node test-cli.js --api-test --key=YOUR_KEY
 # Tests actual OpenRouter API connectivity
@@ -69,6 +77,7 @@ node test-cli.js --api-test --key=YOUR_KEY
 ## Test Data Requirements
 
 ### Sample Content Files
+
 - `tests/samples/english-news.html` - BBC/Guardian articles
 - `tests/samples/german-news.html` - Spiegel/Zeit articles
 - `tests/samples/spanish-blog.html` - El País articles
@@ -76,6 +85,7 @@ node test-cli.js --api-test --key=YOUR_KEY
 - `tests/samples/long-article.html` - 3000+ word article for context testing
 
 ### Expected Output Validation
+
 - JSON schema validation for API responses
 - HTML structure validation for generated output
 - Language detection accuracy tests
@@ -84,6 +94,7 @@ node test-cli.js --api-test --key=YOUR_KEY
 ## Testing Framework Integration
 
 ### Jest/Mocha Integration
+
 ```javascript
 describe('BileApiClient', () => {
   beforeEach(() => {
@@ -101,6 +112,7 @@ describe('BileApiClient', () => {
 ```
 
 ### Performance Testing
+
 - Memory usage monitoring during large article processing
 - Response time benchmarking across different models
 - Concurrent request handling (multiple articles)
@@ -109,6 +121,7 @@ describe('BileApiClient', () => {
 ## Continuous Integration Ideas
 
 ### GitHub Actions Workflow
+
 ```yaml
 name: Bile API Testing
 on: [push, pull_request]
@@ -130,6 +143,7 @@ jobs:
 ```
 
 ### Mock API Server
+
 - Create local mock OpenRouter server for testing without API costs
 - Simulate various response scenarios (success, rate limits, errors)
 - Test failover logic without exhausting real API quotas

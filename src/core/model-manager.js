@@ -3,6 +3,9 @@
  * Handles model selection, performance tracking, and failover logic
  */
 
+// Load core configuration
+const BileCoreConfig = (typeof require !== 'undefined') ? require('./config.js') : null;
+
 const BileModelManager = {
     // Performance tracking storage key
     PERFORMANCE_KEY: 'bile_model_performance',
@@ -27,6 +30,62 @@ const BileModelManager = {
             console.warn('Failed to load model performance data:', error);
             this.performanceCache = this._createEmptyPerformanceData();
         }
+    },
+
+    /**
+     * Get the best available model
+     * @returns {Object} Best model configuration
+     */
+    getBestAvailableModel() {
+        const models = this._getAvailableModels();
+        if (models.length === 0) return null;
+        
+        // Return first available model (they're ordered by preference)
+        return {
+            name: models[0],
+            id: models[0]
+        };
+    },
+
+    /**
+     * Get fallback model for when primary models fail
+     * @returns {Object} Fallback model configuration
+     */
+    getFallbackModel() {
+        const models = this._getAvailableModels();
+        if (models.length === 0) return null;
+        
+        // Return last model as fallback
+        return {
+            name: models[models.length - 1],
+            id: models[models.length - 1]
+        };
+    },
+
+    /**
+     * Get all available models
+     * @returns {Array} List of all available models
+     */
+    getAllModels() {
+        return this._getAvailableModels().map(modelId => ({
+            name: modelId,
+            id: modelId,
+            description: `OpenRouter model: ${modelId}`
+        }));
+    },
+
+    /**
+     * Get available models from config
+     * @private
+     */
+    _getAvailableModels() {
+        if (BileCoreConfig) {
+            return BileCoreConfig.FREE_MODELS;
+        } else if (typeof BileConstants !== 'undefined') {
+            return BileConstants.FREE_MODELS;
+        }
+        // Fallback
+        return ['meta-llama/llama-3.1-8b-instruct:free'];
     },
 
     /**

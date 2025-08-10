@@ -7,12 +7,14 @@ Phase 2 focuses on intelligent content extraction from web pages. Building on th
 ## Technical Objectives
 
 ### Core Goals
+
 - **Smart Article Detection**: Automatically identify article content vs navigation/ads
 - **Content Preservation**: Maintain semantic HTML structure during extraction
 - **Multi-site Support**: Work across different news sites and blog platforms
 - **Metadata Extraction**: Capture titles, authors, publication dates, and other context
 
 ### Quality Requirements
+
 - Extract clean, readable content without boilerplate
 - Preserve important formatting (headings, lists, emphasis)
 - Handle dynamic content and lazy-loaded articles
@@ -21,12 +23,15 @@ Phase 2 focuses on intelligent content extraction from web pages. Building on th
 ## Architecture Approach
 
 ### Extraction Strategy
+
 1. **Primary Method**: Use readability algorithms (similar to Firefox Reader Mode)
 2. **Fallback Method**: Site-specific selectors for major news sites
 3. **Content Validation**: Ensure extracted content meets quality thresholds
 
 ### Module Extensions
+
 Building on Phase 1 modules:
+
 - Extend `utils.js` with content extraction functions
 - Enhance `ui-trigger.js` with content preview capabilities
 - Update `tab-generator.js` to handle structured content
@@ -34,6 +39,7 @@ Building on Phase 1 modules:
 ## Implementation Tasks
 
 ### Task 1: Core Content Extraction Engine
+
 **Files**: `src/modules/content-extractor.js`
 
 ```javascript
@@ -51,12 +57,14 @@ function validateContent(content) -> boolean
 ```
 
 **Key Features**:
+
 - Mozilla Readability algorithm implementation
 - Content scoring and filtering
 - Text density analysis
 - Boilerplate removal
 
 ### Task 2: Content Structure Analysis
+
 **Files**: `src/modules/content-analyzer.js`
 
 ```javascript
@@ -71,12 +79,14 @@ function detectLanguageAndType(content) -> ContentMetadata
 ```
 
 **Key Features**:
+
 - Heading hierarchy detection
 - Paragraph and list identification
 - Language detection using statistical methods
 - Content type classification (news, blog, academic)
 
 ### Task 3: Site-Specific Extraction Rules
+
 **Files**: `src/config/site-rules.js`
 
 ```javascript
@@ -93,12 +103,14 @@ function applySiteRules(domain, document) -> ExtractedContent
 ```
 
 **Supported Sites** (Initial):
+
 - **German**: taz.de, spiegel.de, zeit.de, sueddeutsche.de
 - **French**: lemonde.fr, lefigaro.fr, liberation.fr
 - **Spanish**: elpais.com, elmundo.es, abc.es
 - **English**: bbc.com, theguardian.com, nytimes.com
 
 ### Task 4: Content Preview and Validation
+
 **Files**: Extension of `src/modules/ui-trigger.js`
 
 ```javascript
@@ -113,12 +125,14 @@ function confirmContentExtraction(content) -> Promise<boolean>
 ```
 
 **Key Features**:
+
 - Preview modal with extracted content
 - Manual content selection interface
 - Quality indicators (word count, readability score)
 - User confirmation before processing
 
 ### Task 5: Enhanced HTML Generation
+
 **Files**: Extension of `src/modules/tab-generator.js`
 
 ```javascript
@@ -133,6 +147,7 @@ function generateTableOfContents(content) -> string
 ```
 
 **Key Features**:
+
 - Preserve heading hierarchy
 - Maintain list and emphasis formatting
 - Generate navigation for long articles
@@ -141,6 +156,7 @@ function generateTableOfContents(content) -> string
 ## Data Structures
 
 ### ContentResult
+
 ```javascript
 {
     success: boolean,
@@ -152,6 +168,7 @@ function generateTableOfContents(content) -> string
 ```
 
 ### ExtractedContent
+
 ```javascript
 {
     title: string,
@@ -169,6 +186,7 @@ function generateTableOfContents(content) -> string
 ```
 
 ### ContentElement
+
 ```javascript
 {
     type: 'heading' | 'paragraph' | 'list' | 'quote' | 'image',
@@ -182,6 +200,7 @@ function generateTableOfContents(content) -> string
 ## Testing Strategy
 
 ### Test Cases
+
 1. **Article Detection**: Test on various news sites and blog platforms
 2. **Content Quality**: Verify extraction produces clean, readable content
 3. **Structure Preservation**: Ensure headings, lists, and formatting are maintained
@@ -189,12 +208,14 @@ function generateTableOfContents(content) -> string
 5. **Fallback Mechanisms**: Verify site-specific rules work when readability fails
 
 ### Test Sites
+
 - **High-quality sites**: BBC, Guardian, New York Times
 - **Complex layouts**: CNN, Fox News, Daily Mail
 - **Blog platforms**: Medium, WordPress, Substack
 - **Non-English**: Der Spiegel, Le Monde, El País
 
 ### Performance Targets
+
 - Content extraction: < 500ms for typical articles
 - Accuracy: > 90% clean content extraction
 - Coverage: Works on > 80% of target news sites
@@ -202,11 +223,13 @@ function generateTableOfContents(content) -> string
 ## Integration with Phase 1
 
 ### Modified Functions
+
 - `handleTriggerClick()`: Add content extraction step
 - `isArticlePage()`: Enhance detection accuracy
 - `generateBasicHtml()`: Accept structured content input
 
 ### New UI Elements
+
 - Content preview modal
 - Extraction progress indicator
 - Quality/confidence display
@@ -215,12 +238,14 @@ function generateTableOfContents(content) -> string
 ## Quality Assurance
 
 ### Content Validation Checks
+
 - Minimum word count (> 100 words for articles)
 - Text-to-HTML ratio (avoid navigation-heavy content)
 - Language confidence score
 - Duplicate content detection
 
 ### Error Handling
+
 - Graceful fallback when extraction fails
 - User notification for low-quality extractions
 - Manual selection as last resort
@@ -239,12 +264,14 @@ function generateTableOfContents(content) -> string
 ## Security Considerations
 
 ### Content Sanitization
+
 - XSS protection for extracted HTML
 - URL validation for images and links
 - Safe handling of user-generated content
 - Content Security Policy compliance
 
 ### Privacy Protection
+
 - No content sent to external servers during extraction
 - Local-only processing until Phase 3 integration
 - Respect robots.txt and site policies
@@ -253,6 +280,7 @@ function generateTableOfContents(content) -> string
 ## Next Phase Preparation
 
 Phase 2 prepares for:
+
 - **Phase 3**: Extracted content will be sent to Claude API for translation
 - **Phase 4**: Structured content will enable better HTML generation
 - **Phase 5**: Content metadata will inform user settings and preferences
@@ -266,6 +294,7 @@ The extraction system provides clean, structured input that subsequent phases ca
 ### Completed Components
 
 **Core Modules Created:**
+
 - `src/modules/content-extractor.js` - Readability-based extraction engine (570 lines)
 - `src/modules/content-analyzer.js` - Content structure analysis (390 lines)
 - `src/config/site-rules.js` - Site-specific extraction rules for 15+ sites (280 lines)
@@ -274,6 +303,7 @@ The extraction system provides clean, structured input that subsequent phases ca
 - Updated `src/bile.user.js` - Main userscript with Phase 2 integration
 
 **Key Features Delivered:**
+
 - ✅ Intelligent content extraction with 70-80% confidence on major news sites
 - ✅ Semantic structure preservation (headings, paragraphs, lists, quotes, images)
 - ✅ Multi-language support (English, German, French, Spanish detection)
@@ -284,6 +314,7 @@ The extraction system provides clean, structured input that subsequent phases ca
 - ✅ User confirmation workflow before processing
 
 **Quality Metrics Achieved:**
+
 - Content extraction success rate: >80% on target news sites
 - Structure preservation: Full semantic hierarchy maintained
 - Language detection accuracy: >90% for supported languages
@@ -291,6 +322,7 @@ The extraction system provides clean, structured input that subsequent phases ca
 - Performance: <500ms extraction time for typical articles
 
 **Architecture Improvements:**
+
 - Modular design enabling easy Phase 3 integration
 - Backward compatibility with Phase 1 basic extraction
 - Comprehensive error handling and user feedback
