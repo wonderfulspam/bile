@@ -24,7 +24,7 @@ This directory contains the Phase 1 implementation of Bile - Bilingual Web Page 
 
 ### Method 1: Direct Installation (Recommended for Phase 1)
 1. Install Tampermonkey or Greasemonkey browser extension
-2. Copy the contents of `bile.user.js` 
+2. Copy the contents of `bile.user.js`
 3. Create new userscript in Tampermonkey
 4. Paste the code and save
 5. Navigate to a supported news site to test
@@ -42,7 +42,7 @@ https://raw.githubusercontent.com/user/bile/main/src/bile.user.js
 
 ### German
 - taz (taz.de)
-- Der Spiegel (spiegel.de)  
+- Der Spiegel (spiegel.de)
 - Die Zeit (zeit.de)
 
 ### Spanish
@@ -63,7 +63,7 @@ https://raw.githubusercontent.com/user/bile/main/src/bile.user.js
 - New tab generation with bilingual HTML
 - Mock API responses for testing
 
-✅ **User Interface**  
+✅ **User Interface**
 - Floating trigger button on supported sites
 - Processing indicators and error handling
 - First-run API key setup flow
@@ -133,7 +133,7 @@ Phase 1 requires an Anthropic Claude API key for the full pipeline (though Phase
 
 ⚠️ **Current Limitations**
 - Content extraction is basic (Phase 2 will improve)
-- API responses are mocked (Phase 3 will use real Claude API) 
+- API responses are mocked (Phase 3 will use real Claude API)
 - Limited to predetermined news sites
 - No actual language processing yet
 - Slang detection is placeholder functionality
@@ -151,7 +151,7 @@ Phase 1 requires an Anthropic Claude API key for the full pipeline (though Phase
 ### Code Structure
 The Phase 1 implementation uses an "all-in-one" approach with inline modules for simplicity. The separate module files are provided for:
 - Development and debugging
-- Future phase modularization  
+- Future phase modularization
 - Code organization and maintenance
 
 ### Debugging

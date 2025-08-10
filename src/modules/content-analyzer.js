@@ -78,7 +78,7 @@ const BileContentAnalyzer = {
      */
     detectLanguageAndType(content) {
         const fullText = this.extractFullText(content);
-        
+
         return {
             language: this.detectLanguageAdvanced(fullText),
             contentType: this.classifyContentType(content),
@@ -129,7 +129,7 @@ const BileContentAnalyzer = {
      * Count distinct sections in content
      */
     countSections(elements) {
-        return elements.filter(element => 
+        return elements.filter(element =>
             element.type === 'heading' && element.level <= 3
         ).length;
     },
@@ -151,7 +151,7 @@ const BileContentAnalyzer = {
         score += types.size * 3;
 
         // Length factor
-        const totalWords = elements.reduce((total, element) => 
+        const totalWords = elements.reduce((total, element) =>
             total + this.countWords(element.text), 0
         );
         score += Math.min(totalWords / 100, 10);
@@ -168,7 +168,7 @@ const BileContentAnalyzer = {
         const hasHeadings = elements.some(e => e.type === 'heading');
         const hasLists = elements.some(e => e.type === 'list');
         const hasQuotes = elements.some(e => e.type === 'quote');
-        
+
         const headingCount = elements.filter(e => e.type === 'heading').length;
         const paragraphCount = elements.filter(e => e.type === 'paragraph').length;
 
@@ -209,7 +209,7 @@ const BileContentAnalyzer = {
 
         // Simplified Flesch Reading Ease formula
         const score = 206.835 - (1.015 * avgSentenceLength) - (84.6 * avgSyllablesPerWord);
-        
+
         return Math.max(0, Math.min(100, Math.round(score)));
     },
 
@@ -243,9 +243,9 @@ const BileContentAnalyzer = {
         Object.entries(patterns).forEach(([lang, langPatterns]) => {
             const commonMatches = (text.match(langPatterns.common) || []).length;
             const uniqueMatches = (text.match(langPatterns.unique) || []).length;
-            
+
             const score = commonMatches + (uniqueMatches * 2); // Weight unique patterns more
-            
+
             if (score > maxScore) {
                 maxScore = score;
                 detectedLang = lang;
@@ -266,7 +266,7 @@ const BileContentAnalyzer = {
     classifyContentType(content) {
         const elements = content.content || [];
         const fullText = this.extractFullText(content);
-        
+
         // News article indicators
         if (content.author && content.publishDate) {
             if (fullText.match(/\b(breaking|reported|according to|sources|investigation)\b/gi)) {
@@ -331,7 +331,7 @@ const BileContentAnalyzer = {
         const avgSentenceLength = words / sentences;
 
         let style = 'neutral';
-        
+
         if (avgSentenceLength > 25) style = 'complex';
         else if (avgSentenceLength < 12) style = 'simple';
 
@@ -398,12 +398,12 @@ const BileContentAnalyzer = {
     },
 
     isMainHeading(element, allElements) {
-        return element.level === 1 || 
+        return element.level === 1 ||
                (element.level === 2 && !allElements.some(e => e.type === 'heading' && e.level === 1));
     },
 
     hasSubheadings(element, allElements, currentIndex) {
-        return allElements.slice(currentIndex + 1).some(e => 
+        return allElements.slice(currentIndex + 1).some(e =>
             e.type === 'heading' && e.level > element.level
         );
     },
@@ -417,7 +417,7 @@ const BileContentAnalyzer = {
         const words = this.countWords(text);
         const sentences = this.countSentences(text);
         const avgWordsPerSentence = words / sentences;
-        
+
         if (avgWordsPerSentence > 20) return 'high';
         if (avgWordsPerSentence > 12) return 'medium';
         return 'low';
@@ -438,10 +438,10 @@ const BileContentAnalyzer = {
 
     getLanguageAlternatives(text, patterns, excludeLang) {
         const alternatives = [];
-        
+
         Object.entries(patterns).forEach(([lang, langPatterns]) => {
             if (lang === excludeLang) return;
-            
+
             const score = (text.match(langPatterns.common) || []).length;
             if (score > 0) {
                 alternatives.push({

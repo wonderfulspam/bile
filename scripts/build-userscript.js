@@ -25,8 +25,8 @@ const BUILD_CONFIG = {
         'modules/api-client.js',
         'modules/translation-engine.js',
         'modules/content-analyzer.js', 
-        'modules/content-extractor.js',
         'config/site-rules.js',
+        'modules/content-extractor.js',
         'modules/tab-generator.js',
         'modules/ui-trigger.js',
         'bile.user.js'

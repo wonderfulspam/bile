@@ -12,7 +12,7 @@ const BileTranslationEngine = {
     },
 
     // Content processing settings
-    CHUNK_SIZE: 2500, // Characters per chunk for long articles
+    CHUNK_SIZE: 1200, // Reduced from 2500 to 1200 characters per chunk to prevent timeouts
     MAX_RETRIES: 3,
 
     /**
@@ -25,25 +25,25 @@ const BileTranslationEngine = {
     async translateStructuredContent(extractedContent, targetLanguage = 'en', options = {}) {
         try {
             const startTime = Date.now();
-            
+
             // Prepare translation context
             const context = this._prepareTranslationContext(extractedContent, targetLanguage, options);
-            
+
             // Determine if content needs chunking
             const textContent = this._extractTextForAnalysis(extractedContent);
             const needsChunking = textContent.length > this.CHUNK_SIZE;
-            
+
             let translationResult;
-            
+
             if (needsChunking) {
                 translationResult = await this._translateInChunks(extractedContent, context);
             } else {
                 translationResult = await this._translateComplete(extractedContent, context);
             }
-            
+
             // Post-process and validate
             const finalResult = await this._postProcessTranslation(translationResult, extractedContent);
-            
+
             // Track performance
             const processingTime = Date.now() - startTime;
             this._trackTranslationPerformance(context.selectedModel, {
@@ -52,12 +52,12 @@ const BileTranslationEngine = {
                 contentLength: textContent.length,
                 quality: this._assessTranslationQuality(finalResult)
             });
-            
+
             return finalResult;
-            
+
         } catch (error) {
             console.error('Translation engine error:', error);
-            
+
             // Track failure
             if (options.model) {
                 this._trackTranslationPerformance(options.model, {
@@ -65,7 +65,7 @@ const BileTranslationEngine = {
                     error: error.message
                 });
             }
-            
+
             throw error;
         }
     },
@@ -88,12 +88,12 @@ const BileTranslationEngine = {
                     domain: context.domain || 'unknown'
                 }
             };
-            
+
             return await this.translateStructuredContent(miniContent, targetLanguage, {
                 contentType: 'text-section',
                 ...context
             });
-            
+
         } catch (error) {
             console.error('Text section translation error:', error);
             throw error;
@@ -110,7 +110,7 @@ const BileTranslationEngine = {
         // This could be enhanced with ML models or dictionaries in future phases
         const commonSlangPatterns = this._getSlangPatterns(language);
         const detectedTerms = [];
-        
+
         for (const pattern of commonSlangPatterns) {
             const matches = text.match(new RegExp(pattern.regex, 'gi'));
             if (matches) {
@@ -124,7 +124,7 @@ const BileTranslationEngine = {
                 });
             }
         }
-        
+
         return detectedTerms.sort((a, b) => a.position - b.position);
     },
 
@@ -139,7 +139,7 @@ const BileTranslationEngine = {
         // For Phase 3, focus on single best translation
         // This can be expanded in future phases for ambiguous content
         const mainTranslation = await this.translateTextSection(text, options, targetLanguage);
-        
+
         return [
             {
                 translation: mainTranslation,
@@ -162,7 +162,7 @@ const BileTranslationEngine = {
             // Simple approach: preserve basic tags
             const basicTags = ['<p>', '</p>', '<br>', '<strong>', '</strong>', '<em>', '</em>'];
             let formattedTranslation = translatedText;
-            
+
             // If original had paragraph breaks, try to preserve them
             if (originalHtml.includes('<p>') && !translatedText.includes('<p>')) {
                 const sentences = translatedText.split(/[.!?]+\s+/);
@@ -171,9 +171,9 @@ const BileTranslationEngine = {
                     .map(s => `<p>${s.trim()}${s.includes('.') ? '' : '.'}</p>`)
                     .join('\n');
             }
-            
+
             return formattedTranslation;
-            
+
         } catch (error) {
             console.warn('Formatting preservation failed:', error);
             return translatedText;
@@ -191,31 +191,31 @@ const BileTranslationEngine = {
         try {
             // Basic quality checks
             const qualityScore = this._assessTranslationQuality(translated);
-            
+
             if (qualityScore < this.QUALITY_THRESHOLDS.minimum) {
                 return false;
             }
-            
+
             // Structure validation
             if (!translated || !translated.content || !Array.isArray(translated.content)) {
                 return false;
             }
-            
+
             // Content completeness check
             const originalSections = original.content ? original.content.length : 1;
             const translatedSections = translated.content.length;
-            
+
             if (translatedSections < originalSections * 0.8) {
                 return false; // Lost too much content
             }
-            
+
             // Language consistency check
             if (translated.target_language !== language) {
                 return false;
             }
-            
+
             return true;
-            
+
         } catch (error) {
             console.warn('Quality validation error:', error);
             return false;
@@ -230,12 +230,12 @@ const BileTranslationEngine = {
      */
     _prepareTranslationContext(extractedContent, targetLanguage, options) {
         // Detect source language
-        const sourceLanguage = extractedContent.language || 
+        const sourceLanguage = extractedContent.language ||
             BileApiClient._detectLanguage(this._extractTextForAnalysis(extractedContent));
-        
+
         // Determine content type
         const contentType = this._determineContentType(extractedContent);
-        
+
         // Select optimal model
         const selectedModel = options.model || BileModelManager.selectOptimalModel({
             sourceLanguage,
@@ -243,7 +243,7 @@ const BileTranslationEngine = {
             contentType,
             contentLength: this._extractTextForAnalysis(extractedContent).length
         });
-        
+
         return {
             sourceLanguage,
             targetLanguage,
@@ -263,13 +263,13 @@ const BileTranslationEngine = {
         if (typeof extractedContent === 'string') {
             return extractedContent;
         }
-        
+
         if (extractedContent.content && Array.isArray(extractedContent.content)) {
             return extractedContent.content
                 .map(item => item.text || '')
                 .join(' ');
         }
-        
+
         return JSON.stringify(extractedContent).substring(0, 1000);
     },
 
@@ -280,29 +280,29 @@ const BileTranslationEngine = {
     _determineContentType(extractedContent) {
         const domain = extractedContent.metadata?.domain || '';
         const title = (extractedContent.title || '').toLowerCase();
-        
+
         // Domain-based detection
         if (domain.includes('github.com') || domain.includes('stackoverflow.com')) {
             return 'technical';
         }
-        
+
         if (domain.includes('news') || domain.includes('bbc.com') || domain.includes('cnn.com')) {
             return 'news';
         }
-        
+
         if (domain.includes('blog') || domain.includes('medium.com')) {
             return 'blog';
         }
-        
+
         // Title-based detection
         if (title.includes('tutorial') || title.includes('guide') || title.includes('how to')) {
             return 'technical';
         }
-        
+
         if (title.includes('opinion') || title.includes('editorial')) {
             return 'blog';
         }
-        
+
         // Default fallback
         return 'blog';
     },
@@ -314,13 +314,17 @@ const BileTranslationEngine = {
     async _translateInChunks(extractedContent, context) {
         const chunks = this._createContentChunks(extractedContent);
         const translatedChunks = [];
-        
+
         for (let i = 0; i < chunks.length; i++) {
             const chunk = chunks[i];
-            
+
             try {
+                // Update status in UI modal if available
+                if (typeof BileUI !== 'undefined' && BileUI.updateProcessingStatus) {
+                    BileUI.updateProcessingStatus(`Translating chunk ${i + 1} of ${chunks.length}...`, 'Processing large article in sections');
+                }
                 console.log(`Translating chunk ${i + 1}/${chunks.length}...`);
-                
+
                 const chunkResult = await BileApiClient.translateContent(
                     this._chunkToText(chunk),
                     context.targetLanguage,
@@ -333,17 +337,17 @@ const BileTranslationEngine = {
                         }
                     }
                 );
-                
+
                 translatedChunks.push(chunkResult);
-                
+
                 // Small delay between chunks to respect rate limits
                 if (i < chunks.length - 1) {
                     await new Promise(resolve => setTimeout(resolve, 1000));
                 }
-                
+
             } catch (error) {
                 console.error(`Failed to translate chunk ${i + 1}:`, error);
-                
+
                 // Create fallback chunk
                 translatedChunks.push({
                     source_language: context.sourceLanguage,
@@ -357,7 +361,7 @@ const BileTranslationEngine = {
                 });
             }
         }
-        
+
         // Merge chunks into single result
         return this._mergeTranslatedChunks(translatedChunks, extractedContent);
     },
@@ -368,7 +372,7 @@ const BileTranslationEngine = {
      */
     async _translateComplete(extractedContent, context) {
         const textContent = this._extractTextForAnalysis(extractedContent);
-        
+
         return await BileApiClient.translateContent(textContent, context.targetLanguage, {
             model: context.selectedModel,
             context: context
@@ -384,7 +388,7 @@ const BileTranslationEngine = {
         if (!translationResult.processing_info) {
             translationResult.processing_info = {};
         }
-        
+
         // Add metadata
         translationResult.processing_info = {
             ...translationResult.processing_info,
@@ -393,7 +397,7 @@ const BileTranslationEngine = {
             timestamp: new Date().toISOString(),
             original_metadata: originalContent.metadata || {}
         };
-        
+
         // Validate and fix structure
         if (!translationResult.content || !Array.isArray(translationResult.content)) {
             console.warn('Invalid translation structure, creating fallback');
@@ -404,7 +408,7 @@ const BileTranslationEngine = {
                 slang_terms: []
             }];
         }
-        
+
         return translationResult;
     },
 
@@ -416,14 +420,14 @@ const BileTranslationEngine = {
         // Simple implementation - can be enhanced for better semantic chunking
         const text = this._extractTextForAnalysis(extractedContent);
         const chunks = [];
-        
+
         for (let i = 0; i < text.length; i += this.CHUNK_SIZE) {
             chunks.push({
                 text: text.substring(i, i + this.CHUNK_SIZE),
                 index: chunks.length
             });
         }
-        
+
         return chunks;
     },
 
@@ -441,7 +445,7 @@ const BileTranslationEngine = {
      */
     _mergeTranslatedChunks(translatedChunks, originalContent) {
         const firstChunk = translatedChunks[0] || {};
-        
+
         return {
             source_language: firstChunk.source_language || 'en',
             target_language: firstChunk.target_language || 'en',
@@ -464,26 +468,26 @@ const BileTranslationEngine = {
     _assessTranslationQuality(translationResult) {
         try {
             let score = 0.5; // Base score
-            
+
             // Structure completeness
             if (translationResult.content && Array.isArray(translationResult.content)) {
                 score += 0.2;
-                
+
                 // Content quality
-                const hasTranslations = translationResult.content.some(item => 
+                const hasTranslations = translationResult.content.some(item =>
                     item.translated && item.translated !== item.original
                 );
                 if (hasTranslations) score += 0.2;
-                
+
                 // Slang term detection
-                const hasSlangTerms = translationResult.content.some(item => 
+                const hasSlangTerms = translationResult.content.some(item =>
                     item.slang_terms && item.slang_terms.length > 0
                 );
                 if (hasSlangTerms) score += 0.1;
             }
-            
+
             return Math.min(1, score);
-            
+
         } catch {
             return 0.5;
         }
@@ -509,7 +513,7 @@ const BileTranslationEngine = {
                 { regex: '\\b(tío|chaval|pibe)\\b', category: 'informal', confidence: 0.7 }
             ]
         };
-        
+
         return patterns[language] || [];
     },
 

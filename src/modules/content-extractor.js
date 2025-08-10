@@ -9,34 +9,34 @@ const BileContentExtractor = {
      */
     async extractArticleContent(document) {
         try {
-            // Try readability extraction first
-            let result = this.readabilityExtract(document);
-            
+            // Try site-specific extraction FIRST for better accuracy
+            const domain = window.location.hostname;
+            let result = this.siteSpecificExtract(document, domain);
+
             if (result && this.validateContent(result)) {
                 return {
                     success: true,
                     content: result,
                     confidence: result.confidence || 0.8,
-                    method: 'readability'
+                    method: 'site-specific'
                 };
             }
 
-            // Fallback to site-specific extraction
-            const domain = window.location.hostname;
-            result = this.siteSpecificExtract(document, domain);
-            
+            // Fallback to readability extraction if site-specific fails
+            result = this.readabilityExtract(document);
+
             if (result && this.validateContent(result)) {
                 return {
                     success: true,
                     content: result,
                     confidence: result.confidence || 0.6,
-                    method: 'site-specific'
+                    method: 'readability'
                 };
             }
 
             // Last resort: basic extraction
             result = this.basicExtract(document);
-            
+
             return {
                 success: result !== null,
                 content: result,
@@ -58,6 +58,30 @@ const BileContentExtractor = {
     },
 
     /**
+     * Site-specific extraction using predefined rules
+     */
+    siteSpecificExtract(document, domain) {
+        try {
+            console.log('Attempting site-specific extraction for domain:', domain);
+            // Use BileSiteRules if available
+            if (typeof BileSiteRules !== 'undefined') {
+                const result = BileSiteRules.applySiteRules(domain, document);
+                console.log('Site-specific extraction result:', result ? 'success' : 'failed');
+                if (result) {
+                    console.log('Extracted sections:', result.content?.length || 0);
+                }
+                return result;
+            } else {
+                console.warn('BileSiteRules not available');
+                return null;
+            }
+        } catch (error) {
+            console.warn('Site-specific extraction failed:', error);
+            return null;
+        }
+    },
+
+    /**
      * Readability-based extraction (similar to Firefox Reader Mode)
      */
     readabilityExtract(document) {
@@ -65,7 +89,7 @@ const BileContentExtractor = {
             // Find the main content area
             const candidates = this.findContentCandidates(document);
             const bestCandidate = this.selectBestCandidate(candidates);
-            
+
             if (!bestCandidate) return null;
 
             // Clean and structure the content
@@ -93,7 +117,7 @@ const BileContentExtractor = {
      */
     findContentCandidates(document) {
         const candidates = [];
-        
+
         // Look for common article containers
         const selectors = [
             'article',
@@ -137,14 +161,27 @@ const BileContentExtractor = {
      */
     scoreElement(element) {
         let score = 0;
-        
+
         // Text content length
         const textContent = element.textContent || '';
         const textLength = textContent.length;
-        
+
         if (textLength < 100) return -50;  // Too short
-        
+
         score += Math.min(textLength / 100, 50);  // Cap at 50 points for length
+
+        // Only penalize obviously bad content (keep it minimal)
+        const lowerText = textContent.toLowerCase();
+        if (lowerText.includes('cookie') || lowerText.includes('advertisement') || lowerText.includes('©')) {
+            score -= 30; // Light penalty for clearly unwanted content
+        }
+
+        // Heavy penalty for repeated content (like repeated titles)
+        const lines = textContent.split('\n').map(l => l.trim()).filter(l => l.length > 10);
+        const uniqueLines = [...new Set(lines)];
+        if (lines.length > uniqueLines.length + 2) {
+            score -= 50; // Penalty for repetitive content
+        }
 
         // Paragraph count
         const paragraphs = element.querySelectorAll('p');
@@ -163,7 +200,7 @@ const BileContentExtractor = {
         // Class/ID bonuses
         const className = element.className.toLowerCase();
         const id = element.id.toLowerCase();
-        
+
         if (className.includes('content') || className.includes('article') || className.includes('story')) score += 20;
         if (className.includes('sidebar') || className.includes('nav') || className.includes('menu')) score -= 20;
         if (id.includes('content') || id.includes('article') || id.includes('story')) score += 15;
@@ -176,7 +213,7 @@ const BileContentExtractor = {
      */
     selectBestCandidate(candidates) {
         if (candidates.length === 0) return null;
-        
+
         // Return the highest-scored candidate
         return candidates[0].element;
     },
@@ -187,17 +224,11 @@ const BileContentExtractor = {
     cleanContent(element) {
         // Clone to avoid modifying original DOM
         const cleaned = element.cloneNode(true);
-        
-        // Remove unwanted elements
+
+        // Remove only clearly unwanted elements (minimal approach)
         const unwantedSelectors = [
-            'script', 'style', 'noscript',
-            '.advertisement', '.ad', '.ads',
-            '.social', '.share', '.sharing',
-            '.comments', '.comment',
-            '.sidebar', '.related',
-            'nav', '.navigation', '.nav',
-            'header', 'footer',
-            '.tags', '.categories'
+            'script', 'style', 'noscript', 'iframe',
+            '.advertisement', '.ad', '.ads'
         ];
 
         unwantedSelectors.forEach(selector => {
@@ -205,7 +236,7 @@ const BileContentExtractor = {
             elements.forEach(el => el.remove());
         });
 
-        // Remove empty paragraphs
+        // Remove only empty paragraphs (minimal filtering)
         const paragraphs = cleaned.querySelectorAll('p');
         paragraphs.forEach(p => {
             if (!p.textContent.trim()) {
@@ -243,7 +274,54 @@ const BileContentExtractor = {
             }
         }
 
-        return content;
+        // Remove duplicate content (like repeated titles)
+        return this.deduplicateContent(content);
+    },
+
+    /**
+     * Remove duplicate or very similar content
+     */
+    deduplicateContent(content) {
+        const seen = new Set();
+        const deduplicated = [];
+
+        for (const item of content) {
+            const text = item.text.trim();
+
+            // Skip if we've seen this exact text before
+            if (seen.has(text)) {
+                continue;
+            }
+
+            // Skip if we've seen very similar text (for titles)
+            let isDuplicate = false;
+            for (const seenText of seen) {
+                if (this.calculateSimilarity(text, seenText) > 0.8) {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+
+            if (!isDuplicate) {
+                seen.add(text);
+                deduplicated.push(item);
+            }
+        }
+
+        return deduplicated;
+    },
+
+    /**
+     * Calculate text similarity (simple Jaccard similarity)
+     */
+    calculateSimilarity(text1, text2) {
+        const words1 = new Set(text1.toLowerCase().split(/\s+/));
+        const words2 = new Set(text2.toLowerCase().split(/\s+/));
+
+        const intersection = new Set([...words1].filter(x => words2.has(x)));
+        const union = new Set([...words1, ...words2]);
+
+        return intersection.size / union.size;
     },
 
     /**
@@ -252,8 +330,23 @@ const BileContentExtractor = {
     createContentElement(node) {
         const tagName = node.tagName.toLowerCase();
         const text = node.textContent.trim();
-        
-        if (!text) return null;
+
+        if (!text || text.length < 20) return null;
+
+        // Skip unwanted content patterns
+        const unwantedPatterns = [
+            /^(startseite|gesellschaft|debatte|politik|kultur|sport|meinung|wirtschaft)$/i,
+            /diesen artikel teilen/i,
+            /^(teilen|share|folgen|follow)$/i,
+            /^von\s+\w+.*•.*\d{4}$/i, // Author bylines
+            /cookie|datenschutz|impressum/i
+        ];
+
+        for (const pattern of unwantedPatterns) {
+            if (pattern.test(text)) {
+                return null;
+            }
+        }
 
         const element = {
             text: text,
@@ -345,8 +438,8 @@ const BileContentExtractor = {
         for (const selector of selectors) {
             const element = document.querySelector(selector);
             if (element) {
-                const dateString = element.getAttribute('datetime') || 
-                                element.getAttribute('content') || 
+                const dateString = element.getAttribute('datetime') ||
+                                element.getAttribute('content') ||
                                 element.textContent;
                 if (dateString) {
                     const date = new Date(dateString);
@@ -365,7 +458,7 @@ const BileContentExtractor = {
      */
     detectLanguage(element) {
         const text = element.textContent || '';
-        
+
         // Simple heuristics for common languages
         const patterns = {
             'en': /\b(the|and|or|but|in|on|at|to|for|of|with|by)\b/gi,
@@ -420,7 +513,7 @@ const BileContentExtractor = {
         // Structure bonus
         const hasHeadings = content.some(item => item.type === 'heading');
         const hasParagraphs = content.some(item => item.type === 'paragraph');
-        
+
         if (hasHeadings) score += 0.1;
         if (hasParagraphs) score += 0.1;
 
@@ -431,14 +524,6 @@ const BileContentExtractor = {
         return Math.min(score, 1.0);
     },
 
-    /**
-     * Site-specific extraction (fallback method)
-     */
-    siteSpecificExtract(document, domain) {
-        // This will use the site-rules configuration when available
-        // For now, return null to indicate not implemented
-        return null;
-    },
 
     /**
      * Basic extraction (last resort)

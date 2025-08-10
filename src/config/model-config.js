@@ -122,7 +122,7 @@ const BileModelConfig = {
         if (preferences) {
             return [...preferences];
         }
-        
+
         // Fallback: return models that support the language
         return this.getAllModels().filter(modelId => {
             const config = this.MODELS[modelId];
@@ -144,7 +144,7 @@ const BileModelConfig = {
      * Get optimal model based on multiple criteria
      * @param {Object} criteria - Selection criteria
      * @param {string} criteria.sourceLanguage - Source language
-     * @param {string} criteria.targetLanguage - Target language  
+     * @param {string} criteria.targetLanguage - Target language
      * @param {string} criteria.contentType - Content type
      * @param {number} criteria.contentLength - Content length
      * @param {Array} criteria.excludeModels - Models to exclude
@@ -153,7 +153,7 @@ const BileModelConfig = {
     getOptimalModel(criteria = {}) {
         const {
             sourceLanguage = 'en',
-            targetLanguage = 'en', 
+            targetLanguage = 'en',
             contentType = 'blog',
             contentLength = 1000,
             excludeModels = []
@@ -161,7 +161,7 @@ const BileModelConfig = {
 
         // Get candidate models
         let candidates = [];
-        
+
         // Prioritize by target language
         if (targetLanguage !== 'en') {
             candidates = this.getModelsForLanguage(targetLanguage);
@@ -222,7 +222,7 @@ const BileModelConfig = {
         const config = this.getModelConfig(modelId);
         if (!config) return false;
 
-        return config.languages.includes(sourceLanguage) && 
+        return config.languages.includes(sourceLanguage) &&
                config.languages.includes(targetLanguage);
     },
 

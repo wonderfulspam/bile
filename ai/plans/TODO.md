@@ -21,7 +21,7 @@ global.localStorage = { getItem: () => null, setItem: () => {} };
 ```
 
 ### 3. Model Management Testing
-- Test model selection algorithms with various language/content combinations  
+- Test model selection algorithms with various language/content combinations
 - Validate performance tracking and failover logic
 - Simulate different API response scenarios (success, failure, timeout)
 
@@ -70,7 +70,7 @@ node test-cli.js --api-test --key=YOUR_KEY
 
 ### Sample Content Files
 - `tests/samples/english-news.html` - BBC/Guardian articles
-- `tests/samples/german-news.html` - Spiegel/Zeit articles  
+- `tests/samples/german-news.html` - Spiegel/Zeit articles
 - `tests/samples/spanish-blog.html` - El País articles
 - `tests/samples/technical-docs.html` - Technical documentation
 - `tests/samples/long-article.html` - 3000+ word article for context testing
@@ -89,11 +89,11 @@ describe('BileApiClient', () => {
   beforeEach(() => {
     // Setup mock environment
   });
-  
+
   test('should select optimal model for German content', async () => {
     // Test model selection logic
   });
-  
+
   test('should handle API failures gracefully', async () => {
     // Test error handling and failover
   });
@@ -137,7 +137,7 @@ jobs:
 ## Benefits of CLI Testing
 
 1. **Faster Development Cycle** - No need to reload browser for testing
-2. **Automated Quality Assurance** - Run tests in CI/CD pipeline  
+2. **Automated Quality Assurance** - Run tests in CI/CD pipeline
 3. **Performance Profiling** - Easier to measure memory/CPU usage
 4. **Batch Processing** - Test multiple scenarios simultaneously
 5. **Integration Testing** - Test full pipeline without browser dependencies

@@ -1295,23 +1295,184 @@ const BileTabGenerator = {
      */
     openInNewTab(content) {
         try {
-            const htmlContent = this.generateBasicHtml(content);
-            const dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(htmlContent);
-
-            // Use GM_openInTab if available (Greasemonkey/Tampermonkey)
-            if (typeof GM_openInTab !== 'undefined') {
-                GM_openInTab(dataUrl, { active: true, insert: true });
-            } else {
-                // Fallback to window.open
-                const newWindow = window.open(dataUrl, '_blank');
+            // Try document.write approach first (most reliable for userscripts)
+            try {
+                const newWindow = window.open('', '_blank');
                 if (!newWindow) {
                     throw new Error('Popup blocked. Please allow popups for this site.');
                 }
+
+                const htmlContent = this.generateBasicHtml(content);
+
+                // For very large content, use minimal version
+                const finalHtml = htmlContent.length > 100000 ? this._createMinimalHtml(content) : htmlContent;
+
+                newWindow.document.open();
+                newWindow.document.write(finalHtml);
+                newWindow.document.close();
+
+                // Set the title after loading
+                setTimeout(() => {
+                    if (newWindow.document) {
+                        newWindow.document.title = `Bile - ${content.title_original || 'Translated Article'}`;
+                    }
+                }, 100);
+
+                return; // Success with document.write
+
+            } catch (docWriteError) {
+                console.warn('Document.write failed, trying GM_openInTab:', docWriteError);
             }
+
+            // Fallback: Try GM_openInTab with data URL (for Tampermonkey/Greasemonkey)
+            if (typeof GM_openInTab !== 'undefined') {
+                try {
+                    const htmlContent = this._createMinimalHtml(content); // Use minimal HTML for data URLs
+                    const dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(htmlContent);
+
+                    GM_openInTab(dataUrl, { active: true, insert: true });
+                    return; // Success with GM_openInTab
+
+                } catch (gmError) {
+                    console.warn('GM_openInTab failed:', gmError);
+                }
+            }
+
+            // Final fallback: Create a new window and try document.write with minimal HTML
+            try {
+                const newWindow = window.open('about:blank', '_blank');
+                if (!newWindow) {
+                    throw new Error('All popup attempts blocked. Please allow popups for this site.');
+                }
+
+                const minimalHtml = this._createMinimalHtml(content);
+
+                // Wait for window to be ready
+                setTimeout(() => {
+                    try {
+                        newWindow.document.open();
+                        newWindow.document.write(minimalHtml);
+                        newWindow.document.close();
+                        newWindow.document.title = `Bile - ${content.title_original || 'Translated Article'}`;
+                    } catch (finalError) {
+                        console.error('Final fallback also failed:', finalError);
+                        newWindow.close();
+                        throw finalError;
+                    }
+                }, 250);
+
+                return; // Success with delayed document.write
+
+            } catch (finalError) {
+                console.error('All methods failed:', finalError);
+                throw new Error('Unable to open new tab. Please check popup blocker settings.');
+            }
+
         } catch (error) {
             console.error('Failed to open new tab:', error);
-            throw new Error(`Failed to open result: ${error.message}`);
+
+            // Show user a helpful error message
+            if (typeof BileUI !== 'undefined' && BileUI.updateProcessingStatus) {
+                BileUI.updateProcessingStatus('Failed to open new tab - please allow popups', 'You can copy the content from the console');
+            }
+
+            // As absolute last resort, log the content to console
+            console.log('=== BILE TRANSLATION RESULT ===');
+            console.log('Title:', content.title_translated || content.title_original);
+            if (content.content && Array.isArray(content.content)) {
+                content.content.forEach((item, index) => {
+                    console.log(`\n--- Section ${index + 1} ---`);
+                    console.log('Original:', item.original || item.text);
+                    console.log('Translated:', item.translated || item.text);
+                });
+            }
+            console.log('=== END RESULT ===');
+
+            throw new Error(`Failed to open result: ${error.message}. Check browser console for content.`);
         }
+    },
+
+    /**
+     * Create minimal HTML for final fallback when other methods fail
+     * @private
+     * @param {Object} content - Processed content object
+     * @returns {string} Minimal HTML
+     */
+    _createMinimalHtml(content) {
+        const title = this._sanitizeHtml(content.title_original || 'Translated Article');
+        const translatedTitle = this._sanitizeHtml(content.title_translated || title);
+
+        // Extract just the text content, ignoring complex formatting
+        let originalText = '';
+        let translatedText = '';
+
+        if (content.content && Array.isArray(content.content)) {
+            originalText = content.content
+                .map(item => item.original || item.text || '')
+                .filter(text => text.length > 0)
+                .join('\n\n')
+                .substring(0, 2000); // Limit content
+
+            translatedText = content.content
+                .map(item => item.translated || item.original || item.text || '')
+                .filter(text => text.length > 0)
+                .join('\n\n')
+                .substring(0, 2000); // Limit content
+
+            // Debug: Check if translation actually differs
+            const isActuallyTranslated = content.content.some(item =>
+                item.original && item.translated && item.original !== item.translated
+            );
+
+            if (!isActuallyTranslated) {
+                console.warn('Translation appears identical to original');
+                translatedText = '[Translation appears to be identical to original. This may occur if the source language was already the target language, or if translation failed.]';
+            }
+        }
+
+        return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Bile - ${title}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.5; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        .header { background: #4a90e2; color: white; padding: 15px; text-align: center; margin-bottom: 20px; border-radius: 5px; }
+        .toggle { text-align: center; margin: 20px 0; }
+        .btn { margin: 0 5px; padding: 8px 16px; cursor: pointer; border: 2px solid #4a90e2; background: white; color: #4a90e2; border-radius: 4px; }
+        .btn:hover { background: #4a90e2; color: white; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 4px; }
+        .hide { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌐 Bile Translation</h1>
+            <p>Bilingual Article Viewer</p>
+        </div>
+        <div class="toggle">
+            <button class="btn" onclick="show('original')">Original</button>
+            <button class="btn" onclick="show('translated')">Translation</button>
+        </div>
+        <div id="original" class="section">
+            <h2>${title}</h2>
+            <p>${this._sanitizeHtml(originalText).replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>
+        </div>
+        <div id="translated" class="section hide">
+            <h2>${translatedTitle}</h2>
+            <p>${this._sanitizeHtml(translatedText).replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>
+        </div>
+    </div>
+    <script>
+        function show(section) {
+            document.getElementById('original').className = section === 'original' ? 'section' : 'section hide';
+            document.getElementById('translated').className = section === 'translated' ? 'section' : 'section hide';
+        }
+    </script>
+</body>
+</html>`;
     },
 
     /**

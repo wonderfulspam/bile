@@ -40,7 +40,7 @@ const BileUtils = {
             '.story-body',
             '.article-text'
         ],
-        
+
         TITLE_SELECTORS: [
             'h1',
             '.article-title',
@@ -85,16 +85,16 @@ const BileUtils = {
     debugLog(message, level = 'info', data = null) {
         const timestamp = new Date().toISOString();
         const prefix = `[Bile ${level.toUpperCase()}] ${timestamp}`;
-        
+
         // Use Greasemonkey logging if available
         if (typeof GM_log !== 'undefined') {
             GM_log(`${prefix}: ${message}`);
         }
-        
+
         // Also use console with appropriate method
         const consoleMethod = console[level] || console.log;
         consoleMethod(`${prefix}: ${message}`, data || '');
-        
+
         // Store critical errors for debugging
         if (level === 'error') {
             this._storeErrorLog(message, data);
@@ -117,7 +117,7 @@ const BileUtils = {
 
             const existingLogs = JSON.parse(localStorage.getItem('bile_debug_logs') || '[]');
             existingLogs.push(errorLog);
-            
+
             // Keep only last 20 errors
             const recentLogs = existingLogs.slice(-20);
             localStorage.setItem('bile_debug_logs', JSON.stringify(recentLogs));
@@ -133,7 +133,7 @@ const BileUtils = {
      */
     isValidUrl(url) {
         if (!url || typeof url !== 'string') return false;
-        
+
         try {
             const urlObj = new URL(url);
             return ['http:', 'https:'].includes(urlObj.protocol);
@@ -149,7 +149,7 @@ const BileUtils = {
      */
     sanitizeHtml(html) {
         if (!html || typeof html !== 'string') return '';
-        
+
         return html
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
@@ -166,7 +166,7 @@ const BileUtils = {
     getBrowserLanguage() {
         const lang = navigator.language || navigator.userLanguage || 'en';
         const langCode = lang.split('-')[0].toLowerCase();
-        
+
         // Return language if supported, otherwise default to English
         return this.SUPPORTED_LANGUAGES[langCode] ? langCode : 'en';
     },
@@ -262,7 +262,7 @@ const BileUtils = {
      */
     getWordCount(text) {
         if (!text || typeof text !== 'string') return 0;
-        
+
         return text
             .trim()
             .split(/\s+/)
@@ -288,11 +288,11 @@ const BileUtils = {
      */
     formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
-        
+
         const k = 1024;
         const sizes = ['Bytes', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
-        
+
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     },
 
@@ -321,14 +321,14 @@ const BileUtils = {
             /\/\d{4}\/\d{2}\//, // Date patterns like /2023/12/
             /\/[a-z-]+-\d+\.html/, // Article with ID
         ];
-        
+
         const hasArticleUrl = articleUrlPatterns.some(pattern => pattern.test(url));
 
         // Check for article-like elements
         const hasArticleElement = document.querySelector('article, [role="article"]');
         const hasMultipleParagraphs = document.querySelectorAll('p').length >= 3;
         const hasHeading = document.querySelector('h1, h2');
-        
+
         // Check for known news sites
         const knownNewsSites = [
             'bbc.com', 'cnn.com', 'nytimes.com', 'theguardian.com', 'reuters.com',
@@ -336,11 +336,11 @@ const BileUtils = {
             'lemonde.fr', 'lefigaro.fr', 'liberation.fr',
             'elpais.com', 'elmundo.es', 'lavanguardia.com'
         ];
-        
+
         const isKnownNewsSite = knownNewsSites.some(site => url.includes(site));
 
         // Combine checks
-        return (hasArticleUrl || hasArticleElement || isKnownNewsSite) && 
+        return (hasArticleUrl || hasArticleElement || isKnownNewsSite) &&
                hasMultipleParagraphs && hasHeading;
     },
 
@@ -354,7 +354,7 @@ const BileUtils = {
         const author = document.querySelector('meta[name="author"]')?.content || '';
         const publishDate = document.querySelector('meta[property="article:published_time"]')?.content || '';
         const canonical = document.querySelector('link[rel="canonical"]')?.href || window.location.href;
-        
+
         return {
             title,
             description,
@@ -392,7 +392,7 @@ const BileUtils = {
 
         // Basic content-based detection (simplified for Phase 1)
         const pageText = document.body.textContent.toLowerCase().substring(0, 1000);
-        
+
         const languagePatterns = {
             'de': ['der', 'die', 'das', 'und', 'ist', 'ein', 'eine', 'mit', 'von', 'zu'],
             'es': ['el', 'la', 'los', 'las', 'y', 'es', 'un', 'una', 'de', 'en'],
@@ -413,7 +413,7 @@ const BileUtils = {
                     score += matches.length;
                 }
             }
-            
+
             if (score > bestMatch.score) {
                 bestMatch = { lang, score };
             }

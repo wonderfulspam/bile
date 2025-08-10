@@ -114,46 +114,102 @@ const BileUI = {
             this.showProcessingIndicator();
 
             // Check if API key exists
+            this.updateProcessingStatus('Checking API configuration...', 'Validating OpenRouter API key');
             if (!await BileStorage.hasApiKey()) {
+                this.updateProcessingStatus('API key required');
                 const success = await this._promptForApiKey();
                 if (!success) {
                     this.hideProcessingIndicator();
                     return;
                 }
+                this.updateProcessingStatus('API key configured successfully');
             }
 
             // Extract content using Phase 2 modules
+            this.updateProcessingStatus('Extracting article content...', 'Analyzing page structure');
             const contentResult = await this._extractContent();
 
             if (!contentResult.success) {
                 throw new Error(contentResult.error || 'Content extraction failed');
             }
+            this.updateProcessingStatus('Content extraction completed', `Found ${contentResult.content.metadata?.wordCount || 'unknown'} words`);
 
             // Show content preview and get user confirmation
+            this.updateProcessingStatus('Showing content preview...');
+            this._hideProcessingModal(); // Temporarily hide to show preview
             const userConfirmed = await this.showContentPreview(contentResult.content);
             if (!userConfirmed) {
                 this.hideProcessingIndicator();
                 return;
             }
 
+            // Re-show processing modal for translation
+            this._createProcessingModal();
+            this.updateProcessingStatus('User confirmed content, starting translation...', 'Connecting to AI models');
+
             // Test API connection
+            this.updateProcessingStatus('Testing API connection...');
             const apiConnected = await BileApiClient.testApiConnection();
             if (!apiConnected) {
                 throw new Error('API connection failed. Please check your API key.');
             }
+            this.updateProcessingStatus('API connection successful');
 
             // Get target language preference
             const preferences = await BileStorage.getPreferences();
             const targetLang = preferences.targetLanguage || 'en';
 
+            // Detect source language for better translation context
+            const sourceLanguage = BileApiClient._detectLanguage(
+                typeof contentResult.content === 'string'
+                    ? contentResult.content
+                    : JSON.stringify(contentResult.content)
+            );
+
+            this.updateProcessingStatus(`Source: ${sourceLanguage.toUpperCase()} → Target: ${targetLang.toUpperCase()}`);
+
+            // Warn if source and target are the same
+            if (sourceLanguage === targetLang) {
+                this.updateProcessingStatus(`⚠️ Warning: Source and target languages are both ${targetLang.toUpperCase()}`, 'Translation may not be meaningful');
+
+                // Ask user if they want to proceed or change target language
+                const shouldProceed = confirm(
+                    `The detected source language (${sourceLanguage.toUpperCase()}) is the same as your target language (${targetLang.toUpperCase()}).\n\n` +
+                    'This means the translation may not be useful.\n\n' +
+                    'Click OK to proceed anyway, or Cancel to stop and check your target language settings.'
+                );
+
+                if (!shouldProceed) {
+                    this.updateProcessingStatus('Translation cancelled by user due to language mismatch');
+                    this.hideProcessingIndicator();
+                    return;
+                }
+            }
+
             // Process content
+            this.updateProcessingStatus('Starting translation...', 'This may take a moment');
             const processedContent = await BileApiClient.translateContent(contentResult.content, targetLang);
 
+            // Debug: Log the processed content
+            console.log('Translation result:', processedContent);
+
+            // Validate translation actually occurred
+            if (!this._validateTranslationResult(processedContent, targetLang)) {
+                this.updateProcessingStatus('Translation validation failed - content may not have been translated properly');
+                console.warn('Translation validation failed:', processedContent);
+            }
+
             // Generate and open result
+            this.updateProcessingStatus('Translation completed! Generating bilingual page...', 'Opening in new tab');
             BileTabGenerator.openInNewTab(processedContent);
 
-            this.hideProcessingIndicator();
-            this._showSuccessIndicator();
+            this.updateProcessingStatus('Success! Bilingual page opened in new tab', 'Process completed');
+
+            // Brief delay to show success message
+            setTimeout(() => {
+                this.hideProcessingIndicator();
+                this._showSuccessIndicator();
+            }, 1500);
 
         } catch (error) {
             const userMessage = BileApiClient.handleApiError(error);
@@ -231,14 +287,23 @@ Enter your OpenRouter API key:`);
         // Try to find main article content
         let mainContent = '';
 
-        // Look for common article containers
+        // Look for common article containers - updated with more specific selectors
         const articleSelectors = [
             'article',
             '[role="article"]',
             '.article-content',
             '.article-body',
+            '.post-content',
+            '.entry-content',
+            '.content-body',
+            '.text-content',
+            '.article-text',
+            '.story-body',
+            '.main-content',
             '.content',
-            'main'
+            'main',
+            '#content',
+            '.page-content'
         ];
 
         let articleElement = null;
@@ -248,26 +313,40 @@ Enter your OpenRouter API key:`);
         }
 
         if (articleElement) {
-            // Extract text from paragraphs within the article
-            const paragraphs = articleElement.querySelectorAll('p');
+            // Extract text from paragraphs within the article - improved filtering
+            const paragraphs = articleElement.querySelectorAll('p, div.paragraph, .text-block, h2, h3, h4');
             mainContent = Array.from(paragraphs)
                 .map(p => p.textContent.trim())
-                .filter(text => text.length > 20)
-                .slice(0, 10) // Limit to first 10 paragraphs for Phase 1
+                .filter(text => {
+                    // Filter out navigation, ads, and short fragments
+                    if (text.length < 30) return false;
+                    if (text.match(/^(Home|Startseite|Navigation|Menu|Share|Follow|Subscribe|Login|Register)$/i)) return false;
+                    if (text.match(/^(Gesellschaft|Politik|Kultur|Sport|Debatte|Kommentar|Meinung)$/i)) return false;
+                    if (text.includes('Cookie') || text.includes('Datenschutz') || text.includes('Privacy')) return false;
+                    return true;
+                })
+                .slice(0, 15) // Increased from 10 to 15 paragraphs
                 .join('\n\n');
         }
 
-        // Fallback: get all paragraphs from page
-        if (!mainContent) {
-            const allParagraphs = document.querySelectorAll('p');
+        // Fallback: get all paragraphs from page with better filtering
+        if (!mainContent || mainContent.length < 200) {
+            const allParagraphs = document.querySelectorAll('p, div[class*="text"], div[class*="content"], div[class*="article"]');
             mainContent = Array.from(allParagraphs)
                 .map(p => p.textContent.trim())
-                .filter(text => text.length > 20)
-                .slice(0, 5) // Limit for fallback
+                .filter(text => {
+                    // More aggressive filtering for fallback
+                    if (text.length < 50) return false;
+                    if (text.match(/^(Home|Startseite|Navigation|Menu|Share|Follow|Subscribe|Login|Register|Gesellschaft|Politik|Kultur|Sport|Debatte|Kommentar|Meinung)$/i)) return false;
+                    if (text.includes('Cookie') || text.includes('©') || text.includes('Impressum')) return false;
+                    if (text.match(/^\d{1,2}\.\d{1,2}\.\d{4}$/)) return false; // Skip dates
+                    return true;
+                })
+                .slice(0, 8) // Limit for fallback but allow more content
                 .join('\n\n');
         }
 
-        return `Title: ${title}\n\nContent:\n${mainContent}`.substring(0, 2000); // Limit total length
+        return `Title: ${title}\n\nContent:\n${mainContent}`.substring(0, 3000); // Increased limit for better content quality
     },
 
     /**
@@ -589,6 +668,9 @@ Enter your OpenRouter API key:`);
             button.classList.add('processing');
             button.disabled = true;
         }
+
+        // Create and show processing modal
+        this._createProcessingModal();
     },
 
     /**
@@ -603,6 +685,9 @@ Enter your OpenRouter API key:`);
             button.classList.remove('processing');
             button.disabled = false;
         }
+
+        // Hide processing modal
+        this._hideProcessingModal();
     },
 
     /**
@@ -712,6 +797,175 @@ Enter your OpenRouter API key:`);
     isProcessing() {
         const button = document.getElementById(this.BUTTON_ID);
         return button && button.classList.contains('processing');
+    },
+
+    /**
+     * Create processing status modal
+     * @private
+     */
+    _createProcessingModal() {
+        // Remove existing processing modal
+        const existingModal = document.getElementById('bile-processing-modal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        const modal = document.createElement('div');
+        modal.id = 'bile-processing-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 2147483649;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        `;
+
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 24px;
+            text-align: center;
+        `;
+
+        modalContent.innerHTML = `
+            <div style="margin-bottom: 20px;">
+                <div style="width: 40px; height: 40px; border: 3px solid #f3f3f3; border-top: 3px solid #4CAF50; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px auto;"></div>
+                <h2 style="margin: 0 0 8px 0; color: #1f2937; font-size: 20px; font-weight: 600;">
+                    Processing Article
+                </h2>
+                <p style="margin: 0; color: #6b7280; font-size: 14px;" id="bile-processing-subtitle">
+                    Initializing translation...
+                </p>
+            </div>
+
+            <div id="bile-processing-status" style="background: #f9fafb; border-radius: 8px; padding: 16px; text-align: left; min-height: 120px; max-height: 200px; overflow-y: auto;">
+                <div style="color: #6b7280; font-size: 13px; margin-bottom: 8px;">Status Updates:</div>
+                <div id="bile-status-log" style="color: #374151; font-size: 13px; line-height: 1.4;">
+                    <div>• Starting translation process...</div>
+                </div>
+            </div>
+        `;
+
+        // Add spinning animation CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+
+        // Make modal focusable for accessibility
+        modal.tabIndex = -1;
+        modal.focus();
+    },
+
+    /**
+     * Update processing status in modal
+     * @param {string} status - Status message to display
+     * @param {string} subtitle - Optional subtitle
+     */
+    updateProcessingStatus(status, subtitle = null) {
+        const statusLog = document.getElementById('bile-status-log');
+        const subtitleElement = document.getElementById('bile-processing-subtitle');
+
+        if (statusLog) {
+            const statusEntry = document.createElement('div');
+            statusEntry.textContent = `• ${status}`;
+            statusEntry.style.marginBottom = '4px';
+            statusLog.appendChild(statusEntry);
+
+            // Auto-scroll to bottom
+            const statusContainer = document.getElementById('bile-processing-status');
+            if (statusContainer) {
+                statusContainer.scrollTop = statusContainer.scrollHeight;
+            }
+        }
+
+        if (subtitle && subtitleElement) {
+            subtitleElement.textContent = subtitle;
+        }
+    },
+
+    /**
+     * Hide processing modal
+     * @private
+     */
+    _hideProcessingModal() {
+        const modal = document.getElementById('bile-processing-modal');
+        if (modal) {
+            modal.remove();
+        }
+    },
+
+    /**
+     * Validate that translation actually occurred
+     * @private
+     * @param {Object} result - Translation result
+     * @param {string} targetLang - Expected target language
+     * @returns {boolean} True if translation appears valid
+     */
+    _validateTranslationResult(result, targetLang) {
+        try {
+            // Check basic structure
+            if (!result || !result.content || !Array.isArray(result.content)) {
+                return false;
+            }
+
+            // Check target language matches
+            if (result.target_language !== targetLang) {
+                console.warn('Target language mismatch:', result.target_language, 'vs expected', targetLang);
+            }
+
+            // Check if any translation actually occurred
+            let hasTranslation = false;
+            let hasValidContent = false;
+
+            for (const section of result.content) {
+                if (section.original && section.translated) {
+                    hasValidContent = true;
+
+                    // Check if translated content is different from original
+                    if (section.translated !== section.original &&
+                        section.translated.length > 10 &&
+                        !section.translated.includes('[Translation')) {
+                        hasTranslation = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!hasValidContent) {
+                console.warn('No valid content sections found');
+                return false;
+            }
+
+            if (!hasTranslation) {
+                console.warn('No actual translation detected - content appears identical');
+                return false;
+            }
+
+            return true;
+
+        } catch (error) {
+            console.error('Translation validation error:', error);
+            return false;
+        }
     }
 };
 

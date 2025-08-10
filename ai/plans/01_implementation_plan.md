@@ -24,7 +24,7 @@ src/
 ├── modules/
 │   ├── storage.js            # Secure API key storage
 │   ├── api-client.js         # Claude API communication
-│   ├── ui-trigger.js         # Button/keyboard shortcut handling  
+│   ├── ui-trigger.js         # Button/keyboard shortcut handling
 │   ├── tab-generator.js      # New tab creation and basic HTML
 │   └── utils.js              # Shared utilities and constants
 └── config/
@@ -120,7 +120,7 @@ function sanitizeHtml(html: string) -> string
 - Implement site detection for news articles/blogs
 - Add basic error handling and logging
 
-### Task 2: Secure API Key Storage  
+### Task 2: Secure API Key Storage
 - Implement `storage.js` using GM_setValue/GM_getValue or browser storage APIs
 - Create first-run setup flow for API key entry
 - Add validation for API key format
@@ -154,7 +154,7 @@ function sanitizeHtml(html: string) -> string
 
 ### Test Scenarios
 1. **Button injection**: Verify trigger appears on article pages
-2. **API key storage**: Test first-run setup and key persistence  
+2. **API key storage**: Test first-run setup and key persistence
 3. **New tab creation**: Ensure tab opens with placeholder content
 4. **Cross-browser**: Test in Chrome and Firefox with different userscript managers
 5. **Mobile responsive**: Verify button and functionality work on mobile browsers

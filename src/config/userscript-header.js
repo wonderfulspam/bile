@@ -44,18 +44,18 @@ const SUPPORTED_SITES = {
     'theguardian.com': { language: 'en', name: 'The Guardian' },
     'nytimes.com': { language: 'en', name: 'New York Times' },
     'reuters.com': { language: 'en', name: 'Reuters' },
-    
+
     // German news sites
     'taz.de': { language: 'de', name: 'taz' },
     'spiegel.de': { language: 'de', name: 'Der Spiegel' },
     'zeit.de': { language: 'de', name: 'Die Zeit' },
     'faz.net': { language: 'de', name: 'Frankfurter Allgemeine' },
-    
+
     // Spanish news sites
     'elpais.com': { language: 'es', name: 'El País' },
     'elmundo.es': { language: 'es', name: 'El Mundo' },
     'lavanguardia.com': { language: 'es', name: 'La Vanguardia' },
-    
+
     // French news sites
     'lemonde.fr': { language: 'fr', name: 'Le Monde' },
     'lefigaro.fr': { language: 'fr', name: 'Le Figaro' },

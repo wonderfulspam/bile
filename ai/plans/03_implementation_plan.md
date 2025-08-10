@@ -155,7 +155,7 @@ class TranslationEngine {
 ### System Prompt Template
 
 ```
-You are a professional translator specializing in {source_language} to {target_language} translation. 
+You are a professional translator specializing in {source_language} to {target_language} translation.
 Your task is to translate web article content while preserving:
 - Original meaning and context
 - Tone and style appropriate to the content type
@@ -282,7 +282,7 @@ const requestBody = {
 ## Success Criteria
 
 - ✅ OpenRouter integration functional with 3+ models
-- ✅ Automatic model failover working reliably  
+- ✅ Automatic model failover working reliably
 - ✅ Translation quality suitable for language learning
 - ✅ Multi-language support (EN↔DE, EN↔FR, EN↔ES minimum)
 - ✅ User can select preferred models
@@ -306,7 +306,7 @@ const requestBody = {
 ### Configuration Changes
 
 1. **API Endpoints**: Replace Anthropic URLs with OpenRouter
-2. **Authentication**: Switch from Claude API keys to OpenRouter API keys  
+2. **Authentication**: Switch from Claude API keys to OpenRouter API keys
 3. **Model References**: Update all model IDs to OpenRouter format
 4. **Pricing**: Remove cost considerations (using free models)
 

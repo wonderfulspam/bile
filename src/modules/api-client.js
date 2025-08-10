@@ -14,7 +14,7 @@ const BileApiClient = {
         'microsoft/mai-ds-r1:free'
     ],
     MAX_TOKENS: 4000,
-    TIMEOUT_MS: 45000,
+    TIMEOUT_MS: 30000, // Reduced from 45s to 30s
     currentModelIndex: 0,
 
     /**
@@ -77,14 +77,18 @@ const BileApiClient = {
                     }
                 }
 
-                const prompt = this._buildTranslationPrompt(content, targetLang, { 
+                const prompt = this._buildTranslationPrompt(content, targetLang, {
                     ...options,
                     model: currentModel,
                     attempt: attempt + 1
                 });
-                
+
+                // Update status in UI modal if available
+                if (typeof BileUI !== 'undefined' && BileUI.updateProcessingStatus) {
+                    BileUI.updateProcessingStatus(`Attempting translation with ${currentModel} (attempt ${attempt + 1}/${maxRetries})`, 'Sending request to AI model');
+                }
                 console.log(`Attempting translation with model: ${currentModel} (attempt ${attempt + 1}/${maxRetries})`);
-                
+
                 const startTime = Date.now();
                 const response = await this._makeApiRequest(apiKey, {
                     model: currentModel,
@@ -96,35 +100,46 @@ const BileApiClient = {
 
                 const responseTime = Date.now() - startTime;
                 const parsedResponse = this._parseTranslationResponse(response, content, targetLang);
-                
+
                 // Validate translation quality
                 if (this._validateTranslation(parsedResponse)) {
                     // Track successful translation
                     this._trackModelSuccess(currentModel, responseTime, parsedResponse);
-                    
+
                     // Reset failover state on success
                     if (typeof BileModelManager !== 'undefined') {
                         BileModelManager.resetFailover();
                     }
-                    
+
                     return parsedResponse;
                 }
-                
+
                 throw new Error('Translation validation failed - quality below threshold');
-                
+
             } catch (error) {
                 lastError = error;
                 const responseTime = Date.now() - (Date.now() - 1000); // Approximate
-                
+
                 console.warn(`Translation attempt ${attempt + 1} failed with model ${currentModel}:`, error.message);
-                
+
+                // Update status in UI modal if available
+                if (typeof BileUI !== 'undefined' && BileUI.updateProcessingStatus) {
+                    BileUI.updateProcessingStatus(`Translation attempt ${attempt + 1} failed: ${error.message}`, 'Trying next model');
+                }
+
                 // Track model failure
                 this._trackModelFailure(currentModel, error, responseTime);
-                
+
                 // Progressive backoff before retry
                 if (attempt < maxRetries - 1) {
                     const delay = Math.min(1000 * Math.pow(2, attempt), 10000); // Exponential backoff, max 10s
                     console.log(`Waiting ${delay}ms before retry...`);
+
+                    // Update status about retry
+                    if (typeof BileUI !== 'undefined' && BileUI.updateProcessingStatus) {
+                        BileUI.updateProcessingStatus(`Waiting ${Math.round(delay/1000)}s before retrying...`, 'Preparing next attempt');
+                    }
+
                     await this._delay(delay);
                 }
             }
@@ -143,7 +158,7 @@ const BileApiClient = {
         if (typeof BileModelManager !== 'undefined') {
             const sourceLanguage = this._detectLanguage(content);
             const contentType = this._determineContentType(content);
-            
+
             return BileModelManager.selectOptimalModel({
                 sourceLanguage,
                 targetLanguage: targetLang,
@@ -151,7 +166,7 @@ const BileApiClient = {
                 contentLength: content.length
             });
         }
-        
+
         // Fallback to original logic if manager not available
         return this._selectOptimalModel(content, targetLang);
     },
@@ -162,30 +177,30 @@ const BileApiClient = {
      */
     _selectOptimalModel(content, targetLang) {
         const contentLength = content.length;
-        
+
         // For Asian languages, prefer Qwen 3 or Kimi
-        if (['zh', 'ja', 'ko'].includes(targetLang) || 
+        if (['zh', 'ja', 'ko'].includes(targetLang) ||
             ['zh', 'ja', 'ko'].includes(this._detectLanguage(content))) {
-            return contentLength > 50000 ? 
-                'qwen/qwen3-235b-a22b:free' : 
+            return contentLength > 50000 ?
+                'qwen/qwen3-235b-a22b:free' :
                 'moonshotai/kimi-k2:free';
         }
-        
+
         // For technical/analytical content, prefer DeepSeek R1
         const contentStr = typeof content === 'string' ? content : this._extractTextForAnalysis(content);
         const lowerContent = contentStr.toLowerCase();
-        
-        if (lowerContent.includes('analysis') || 
+
+        if (lowerContent.includes('analysis') ||
             lowerContent.includes('technical') ||
             lowerContent.includes('research')) {
             return 'deepseek/deepseek-r1-0528:free';
         }
-        
+
         // For European languages, prefer Chimera or MAI-DS
         if (['de', 'fr', 'it', 'es', 'pt'].includes(targetLang)) {
             return 'tngtech/deepseek-r1t2-chimera:free';
         }
-        
+
         // Default to MAI-DS for English and professional content
         return 'microsoft/mai-ds-r1:free';
     },
@@ -198,7 +213,7 @@ const BileApiClient = {
         if (typeof BileModelManager !== 'undefined') {
             const sourceLanguage = this._detectLanguage(content);
             const contentType = this._determineContentType(content);
-            
+
             return BileModelManager.getFailoverModel({
                 sourceLanguage,
                 targetLanguage: targetLang,
@@ -206,7 +221,7 @@ const BileApiClient = {
                 contentLength: content.length
             });
         }
-        
+
         // Fallback: cycle through available models
         const nextIndex = (this.currentModelIndex + attempt) % this.FREE_MODELS.length;
         return this.FREE_MODELS[nextIndex];
@@ -220,21 +235,21 @@ const BileApiClient = {
         // Simple heuristic-based content type detection
         const contentStr = typeof content === 'string' ? content : this._extractTextForAnalysis(content);
         const lowerContent = contentStr.toLowerCase();
-        
-        if (lowerContent.includes('tutorial') || lowerContent.includes('documentation') || 
+
+        if (lowerContent.includes('tutorial') || lowerContent.includes('documentation') ||
             lowerContent.includes('api') || lowerContent.includes('function')) {
             return 'technical';
         }
-        
-        if (lowerContent.includes('news') || lowerContent.includes('reported') || 
+
+        if (lowerContent.includes('news') || lowerContent.includes('reported') ||
             lowerContent.includes('according to') || lowerContent.includes('statement')) {
             return 'news';
         }
-        
+
         if (content.length > 3000) {
             return 'long-form';
         }
-        
+
         return 'blog'; // Default
     },
 
@@ -255,14 +270,14 @@ const BileApiClient = {
      */
     _calculateMaxTokensForModel(content, modelId) {
         const baseTokens = this._calculateMaxTokens(content);
-        
+
         if (typeof BileModelConfig !== 'undefined') {
             const config = BileModelConfig.getModelConfig(modelId);
             if (config) {
                 return Math.min(baseTokens, config.maxTokens);
             }
         }
-        
+
         return baseTokens;
     },
 
@@ -302,20 +317,20 @@ const BileApiClient = {
     _assessTranslationQuality(result) {
         try {
             let score = 0.5; // Base score
-            
+
             if (result && result.content && Array.isArray(result.content)) {
                 score += 0.2; // Has structure
-                
-                const hasValidTranslations = result.content.some(item => 
-                    item.translated && item.translated.length > 0 && 
+
+                const hasValidTranslations = result.content.some(item =>
+                    item.translated && item.translated.length > 0 &&
                     item.translated !== item.original
                 );
-                
+
                 if (hasValidTranslations) {
                     score += 0.3; // Has actual translations
                 }
             }
-            
+
             return Math.min(1.0, score);
         } catch {
             return 0.5;
@@ -335,8 +350,9 @@ const BileApiClient = {
      * @private
      */
     _calculateMaxTokens(content) {
-        const baseTokens = Math.min(content.length * 1.5, this.MAX_TOKENS);
-        return Math.max(1000, Math.min(baseTokens, 4000));
+        // Balance speed with quality - allow more tokens for better translations
+        const baseTokens = Math.min(content.length * 2, 3500); // Increased to allow detailed responses
+        return Math.max(1500, Math.min(baseTokens, 3500)); // Increased for better quality
     },
 
     /**
@@ -355,7 +371,7 @@ const BileApiClient = {
         if (typeof content === 'string') {
             return content;
         }
-        
+
         if (content && typeof content === 'object') {
             // Handle structured content from Phase 2
             if (content.content && Array.isArray(content.content)) {
@@ -363,21 +379,21 @@ const BileApiClient = {
                     .map(item => item.text || item.original || '')
                     .join(' ');
             }
-            
+
             // Handle content with title and text
             if (content.title && content.text) {
                 return `${content.title} ${content.text}`;
             }
-            
+
             // Handle content with just text
             if (content.text) {
                 return content.text;
             }
-            
+
             // Fallback: stringify the object
             return JSON.stringify(content).substring(0, 1000);
         }
-        
+
         // Ultimate fallback
         return '';
     },
@@ -402,21 +418,21 @@ const BileApiClient = {
 
         let maxScore = 0;
         let detectedLang = 'en';
-        
+
         for (const [lang, words] of Object.entries(languagePatterns)) {
-            const score = words.filter(word => 
-                lowerContent.includes(` ${word} `) || 
+            const score = words.filter(word =>
+                lowerContent.includes(` ${word} `) ||
                 lowerContent.includes(`${word} `) ||
                 lowerContent.includes(` ${word}`) ||
                 lowerContent.includes(word)
             ).length;
-            
+
             if (score > maxScore) {
                 maxScore = score;
                 detectedLang = lang;
             }
         }
-        
+
         return detectedLang;
     },
 
@@ -435,35 +451,36 @@ const BileApiClient = {
     _buildTranslationPrompt(content, targetLang, options = {}) {
         const sourceLanguage = this._detectLanguage(content);
         const title = this._extractTitle();
-        
-        const systemPrompt = `You are a professional translator creating bilingual content for language learners. Convert articles into structured bilingual learning materials.
+
+        const systemPrompt = `You are a professional translator creating bilingual content for language learners. Translate articles into structured bilingual learning materials with cultural context.
 
 CRITICAL: Your response must be valid JSON. Do not include any text before or after the JSON structure.
 
 Requirements:
 1. Identify source language automatically
-2. Translate to ${targetLang} while preserving meaning
-3. Mark slang, idioms, colloquialisms with <slang> tags  
-4. Provide concise explanations for cultural terms
-5. Maintain content structure and tone
+2. Translate to ${targetLang} while preserving meaning and tone
+3. Identify slang, idioms, colloquialisms, cultural references, and informal language
+4. Provide detailed explanations for cultural terms and slang
+5. Maintain content structure and emotional tone
+6. Focus on the main article content, ignore navigation elements
 
 Output exactly this JSON structure:
 {
-  "source_language": "detected_code",
+  "source_language": "detected_language_code",
   "target_language": "${targetLang}",
-  "title_original": "original title",
-  "title_translated": "translated title",
+  "title_original": "original article title",
+  "title_translated": "translated article title",
   "content": [
     {
       "type": "paragraph",
-      "original": "text with <slang>marked terms</slang>",
-      "translated": "translation with <slang>terms preserved</slang>",
+      "original": "original text with cultural terms preserved",
+      "translated": "high-quality translation preserving tone and meaning",
       "slang_terms": [
         {
-          "term": "word",
-          "translation": "translation", 
-          "explanation_original": "brief explanation in source language",
-          "explanation_translated": "brief explanation in target language"
+          "term": "cultural_term_or_slang",
+          "translation": "English_equivalent",
+          "explanation_original": "detailed explanation in source language",
+          "explanation_translated": "detailed explanation in target language"
         }
       ]
     }
@@ -471,10 +488,26 @@ Output exactly this JSON structure:
 }`;
 
         const contentStr = typeof content === 'string' ? content : this._extractTextForAnalysis(content);
+
+        // Balance content length with quality - allow more content for better translations
+        let limitedContent = contentStr.substring(0, 2000); // Increased from 800 to 2000 for better quality
+
+        // Try to end at a complete sentence or paragraph
+        const lastSentenceEnd = Math.max(
+            limitedContent.lastIndexOf('.'),
+            limitedContent.lastIndexOf('!'),
+            limitedContent.lastIndexOf('?'),
+            limitedContent.lastIndexOf('\n\n')
+        );
+
+        if (lastSentenceEnd > 800) { // Ensure substantial content
+            limitedContent = limitedContent.substring(0, lastSentenceEnd + 1);
+        }
+
         const userPrompt = `Title: ${title}
 
 Content to translate:
-${contentStr.substring(0, 3000)}${contentStr.length > 3000 ? '...' : ''}`;
+${limitedContent}${contentStr.length > limitedContent.length ? '...' : ''}`;
 
         return {
             messages: [
@@ -527,7 +560,7 @@ ${contentStr.substring(0, 3000)}${contentStr.length > 3000 ? '...' : ''}`;
             }
 
             const messageContent = response.choices[0].message.content.trim();
-            
+
             // Try to parse as JSON
             let parsedContent;
             try {
@@ -558,7 +591,7 @@ ${contentStr.substring(0, 3000)}${contentStr.length > 3000 ? '...' : ''}`;
             return parsedContent;
         } catch (error) {
             console.error('Failed to parse translation response:', error);
-            
+
             // Return fallback response
             return this._createFallbackResponse(originalContent, targetLang, error.message);
         }
@@ -605,7 +638,7 @@ ${contentStr.substring(0, 3000)}${contentStr.length > 3000 ? '...' : ''}`;
                 if (section.type === 'error') {
                     return false;
                 }
-                
+
                 if (!section.original || !section.translated) {
                     return false;
                 }
@@ -628,13 +661,13 @@ ${contentStr.substring(0, 3000)}${contentStr.length > 3000 ? '...' : ''}`;
      */
     handleApiError(error) {
         const errorMessage = `Bile OpenRouter Error: ${error.message}`;
-        
+
         // Log for debugging
         console.error(errorMessage, error);
-        
+
         // OpenRouter-specific error messages
         let userMessage = 'An error occurred during translation.';
-        
+
         if (error.message.includes('API key') || error.message.includes('401')) {
             userMessage = 'Please check your OpenRouter API key configuration.';
         } else if (error.message.includes('429') || error.message.includes('rate limit')) {
@@ -655,7 +688,7 @@ ${contentStr.substring(0, 3000)}${contentStr.length > 3000 ? '...' : ''}`;
 
         // Store error for potential debugging
         this._logError(error);
-        
+
         return userMessage;
     },
 
@@ -687,11 +720,11 @@ ${contentStr.substring(0, 3000)}${contentStr.length > 3000 ? '...' : ''}`;
                 stack: error.stack,
                 url: window.location.href
             };
-            
+
             // Store in temporary local storage (will be cleared on page reload)
             const existingLogs = JSON.parse(localStorage.getItem('bile_error_logs') || '[]');
             existingLogs.push(errorLog);
-            
+
             // Keep only last 10 errors
             const recentLogs = existingLogs.slice(-10);
             localStorage.setItem('bile_error_logs', JSON.stringify(recentLogs));

@@ -18,7 +18,7 @@ Validates and lints HTML files using the `tidy` command-line tool.
 
 Requires `tidy` to be installed:
 - **Ubuntu/Debian**: `sudo apt-get install tidy`
-- **macOS**: `brew install tidy-html5` 
+- **macOS**: `brew install tidy-html5`
 - **CentOS/RHEL**: `sudo yum install tidy`
 
 ## Usage
@@ -36,7 +36,7 @@ Requires `tidy` to be installed:
 ## Tidy Options Used
 
 - `-e`: Show only errors and warnings
-- `-q`: Suppress non-essential output  
+- `-q`: Suppress non-essential output
 - `--drop-proprietary-attributes no`: Don't ignore non-standard attributes
 
 ## Exit Codes

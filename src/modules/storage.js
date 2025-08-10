@@ -19,7 +19,7 @@ const BileStorage = {
         if (trimmedKey.length < 10) {
             throw new Error('Invalid API key format: Key appears too short');
         }
-        
+
         // Optional: More specific validation for known providers
         // Most API keys are alphanumeric with dashes/underscores
 

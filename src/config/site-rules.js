@@ -7,13 +7,23 @@ const BILE_SITE_RULES = {
     // German news sites
     'taz.de': {
         selectors: {
-            title: '.article-title h1, .sectitle',
-            author: '.author-name, .byline-author',
-            date: '.article-date, .date',
-            content: '.article-body, .sectbody',
-            remove: ['.advertisement', '.social-media', '.related-articles']
+            title: 'h1, .typo-r-head-meinung-detail, .typo-r-topline-detail',
+            author: '.author-name, .column-author-profile .name, [data-val="author"]',
+            date: '.date, time[datetime], .datum',
+            // Ultra-specific: target only the article content div, exclude comments
+            content: '.main-article-corpus > .columns.is-multiline p.typo-bodytext, .main-article-corpus > .columns.is-multiline h2.typo-head-small',
+            remove: [
+                '.webelement_adzone', '.advertisement', '.anzeige',
+                '.webelement_citation', '.citation',
+                '.shariff', '.shariff-wrapper', '.teilen',
+                '.social-media', '.social-media-title',
+                '.author-container', '.author-bio',
+                '.tzi-bottom-container', // TAZ subscription box
+                '.comments-list', '.comments-container', '.kommune', // Comments sections
+                'ul.comments-list' // Specifically exclude comments list
+            ]
         },
-        confidence: 0.8
+        confidence: 0.98
     },
 
     'spiegel.de': {
@@ -193,10 +203,17 @@ const BileSiteRules = {
      */
     applySiteRules(domain, document) {
         const rules = this.getRulesForDomain(domain);
+        console.log('Rules found for domain', domain, ':', rules ? 'yes' : 'no');
         if (!rules) return null;
 
         try {
             const content = this.extractWithRules(document, rules);
+            console.log('Extracted content:', content ? 'success' : 'failed');
+            if (content) {
+                console.log('Content sections:', content.content?.length || 0);
+                console.log('Content validation result:', this.validateExtractedContent(content));
+            }
+
             if (content && this.validateExtractedContent(content)) {
                 content.confidence = rules.confidence;
                 return content;
@@ -240,7 +257,7 @@ const BileSiteRules = {
         }
 
         // Extract title
-        const title = this.extractWithSelector(document, rules.selectors.title) || 
+        const title = this.extractWithSelector(document, rules.selectors.title) ||
                      document.title || 'Untitled';
 
         // Extract author
@@ -283,8 +300,8 @@ const BileSiteRules = {
         for (const sel of selectors) {
             const element = document.querySelector(sel);
             if (element) {
-                return element.getAttribute('content') || 
-                       element.getAttribute('datetime') || 
+                return element.getAttribute('content') ||
+                       element.getAttribute('datetime') ||
                        element.textContent;
             }
         }
@@ -312,13 +329,15 @@ const BileSiteRules = {
         for (const sel of selectors) {
             const elements = document.querySelectorAll(sel);
             if (elements.length > 0) {
-                // If multiple elements, combine them
-                if (elements.length === 1) {
-                    return elements[0];
+                // Limit to reasonable number of elements to prevent extracting entire site
+                const limitedElements = Array.from(elements).slice(0, 20); // Limit to first 20 elements
+
+                if (limitedElements.length === 1) {
+                    return limitedElements[0];
                 } else {
                     // Create a container for multiple content elements
                     const container = document.createElement('div');
-                    elements.forEach(el => container.appendChild(el.cloneNode(true)));
+                    limitedElements.forEach(el => container.appendChild(el.cloneNode(true)));
                     return container;
                 }
             }
@@ -410,7 +429,7 @@ const BileSiteRules = {
      */
     detectLanguageFromContent(contentElement) {
         const text = contentElement.textContent || '';
-        
+
         // Simple language detection patterns
         const patterns = {
             'en': /\b(the|and|or|but|in|on|at|to|for|of|with|by)\b/gi,
@@ -458,12 +477,21 @@ const BileSiteRules = {
         if (!content.title || content.title.length < 3) return false;
         if (!content.content || content.content.length === 0) return false;
 
-        // Check minimum word count
+        // Reject if too many sections (likely extracted too much)
+        if (content.content.length > 50) {
+            console.warn('Extracted content has too many sections:', content.content.length);
+            return false;
+        }
+
+        // Check minimum word count but not too much
         const wordCount = content.metadata?.wordCount || 0;
-        if (wordCount < 100) return false;
+        if (wordCount < 100 || wordCount > 15000) {
+            console.warn('Content word count out of reasonable range:', wordCount);
+            return false;
+        }
 
         // Check for reasonable content structure
-        const hasText = content.content.some(element => 
+        const hasText = content.content.some(element =>
             element.type === 'paragraph' && element.text.length > 50
         );
 

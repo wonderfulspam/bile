@@ -6,10 +6,10 @@
 const BileModelManager = {
     // Performance tracking storage key
     PERFORMANCE_KEY: 'bile_model_performance',
-    
+
     // Current performance data cache
     performanceCache: null,
-    
+
     // Failover state
     failoverState: {
         currentAttempt: 0,
@@ -45,7 +45,7 @@ const BileModelManager = {
 
         // Combine excluded models with failed models
         const allExcluded = [...excludeModels, ...this.failoverState.excludedModels];
-        
+
         // Get base recommendation from config
         const configRecommendation = BileModelConfig.getOptimalModel({
             sourceLanguage,
@@ -76,14 +76,14 @@ const BileModelManager = {
     trackAttempt(modelId, result) {
         try {
             const performance = this.performanceCache || this._createEmptyPerformanceData();
-            
+
             // Initialize model data if needed
             if (!performance.models[modelId]) {
                 performance.models[modelId] = this._createModelPerformanceData();
             }
 
             const modelData = performance.models[modelId];
-            
+
             // Update counters
             modelData.totalAttempts++;
             if (result.success) {
@@ -129,21 +129,21 @@ const BileModelManager = {
      */
     getFailoverModel(criteria = {}) {
         this.failoverState.currentAttempt++;
-        
+
         // Get all available models
         const availableModels = BileModelConfig.getAllModels();
         const excludeModels = [...(criteria.excludeModels || []), ...this.failoverState.excludedModels];
-        
+
         // Find unused models
         const unusedModels = availableModels.filter(modelId => !excludeModels.includes(modelId));
-        
+
         if (unusedModels.length === 0) {
             return null; // No more models to try
         }
 
         // Sort by performance score (best first)
         const sortedModels = this._sortModelsByPerformance(unusedModels, criteria);
-        
+
         return sortedModels[0] || null;
     },
 
@@ -166,7 +166,7 @@ const BileModelManager = {
     getModelStats(modelId) {
         const performance = this.performanceCache || this._createEmptyPerformanceData();
         const modelData = performance.models[modelId];
-        
+
         if (!modelData) {
             return {
                 attempts: 0,
@@ -195,14 +195,14 @@ const BileModelManager = {
     getAllModelStats() {
         const stats = {};
         const availableModels = BileModelConfig.getAllModels();
-        
+
         for (const modelId of availableModels) {
             stats[modelId] = {
                 ...this.getModelStats(modelId),
                 config: BileModelConfig.getModelDisplayInfo(modelId)
             };
         }
-        
+
         return stats;
     },
 
@@ -243,7 +243,7 @@ const BileModelManager = {
     async _savePerformanceData() {
         try {
             const data = JSON.stringify(this.performanceCache);
-            
+
             if (typeof BileStorage !== 'undefined') {
                 await BileStorage.set(this.PERFORMANCE_KEY, data);
             } else {
@@ -291,16 +291,16 @@ const BileModelManager = {
      */
     _adjustForPerformance(recommendedModel, criteria) {
         const performance = this.performanceCache || this._createEmptyPerformanceData();
-        
+
         // If recommended model has poor performance, try alternatives
         const modelStats = this.getModelStats(recommendedModel);
-        
+
         if (modelStats.attempts >= 3 && modelStats.successRate < 0.5) {
             // Find better performing alternative
             const alternatives = BileModelConfig.getModelsForLanguage(criteria.targetLanguage)
                 .filter(modelId => modelId !== recommendedModel)
                 .filter(modelId => !criteria.excludeModels.includes(modelId));
-                
+
             for (const altModel of alternatives) {
                 const altStats = this.getModelStats(altModel);
                 if (altStats.successRate > modelStats.successRate || altStats.attempts === 0) {
@@ -308,7 +308,7 @@ const BileModelManager = {
                 }
             }
         }
-        
+
         return recommendedModel;
     },
 
@@ -321,7 +321,7 @@ const BileModelManager = {
         if (!this.failoverState.excludedModels.includes(modelId)) {
             this.failoverState.excludedModels.push(modelId);
         }
-        
+
         this.failoverState.lastFailure = {
             model: modelId,
             error: error,
@@ -383,14 +383,14 @@ const BileModelManager = {
         return [...modelIds].sort((a, b) => {
             const statsA = this.getModelStats(a);
             const statsB = this.getModelStats(b);
-            
+
             // Prioritize models that support the language pair
             const supportsA = BileModelConfig.supportsLanguagePair(a, criteria.sourceLanguage, criteria.targetLanguage);
             const supportsB = BileModelConfig.supportsLanguagePair(b, criteria.sourceLanguage, criteria.targetLanguage);
-            
+
             if (supportsA && !supportsB) return -1;
             if (!supportsA && supportsB) return 1;
-            
+
             // Then sort by performance score
             return statsB.score - statsA.score;
         });
