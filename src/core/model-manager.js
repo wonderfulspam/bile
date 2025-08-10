@@ -39,7 +39,7 @@ const BileModelManager = {
     getBestAvailableModel() {
         const models = this._getAvailableModels();
         if (models.length === 0) return null;
-        
+
         // Return first available model (they're ordered by preference)
         return {
             name: models[0],
@@ -54,7 +54,7 @@ const BileModelManager = {
     getFallbackModel() {
         const models = this._getAvailableModels();
         if (models.length === 0) return null;
-        
+
         // Return last model as fallback
         return {
             name: models[models.length - 1],
@@ -99,7 +99,7 @@ const BileModelManager = {
             ...(criteria.excludeModels || []),
             ...this.failedModels
         ];
-        
+
         return BileModelConfig.getOptimalModel({
             ...criteria,
             excludeModels: excludeWithFailures
@@ -264,14 +264,11 @@ const BileModelManager = {
      */
     async loadPerformanceData() {
         try {
-            if (typeof BileStorage !== 'undefined') {
-                const data = await BileStorage.get(this.PERFORMANCE_KEY);
-                this.performanceCache = data ? JSON.parse(data) : this._createEmptyPerformanceData();
-            } else {
-                // Fallback to localStorage
-                const data = localStorage.getItem(this.PERFORMANCE_KEY);
-                this.performanceCache = data ? JSON.parse(data) : this._createEmptyPerformanceData();
-            }
+            // Use localStorage for performance data storage
+            const data = typeof localStorage !== 'undefined'
+                ? localStorage.getItem(this.PERFORMANCE_KEY)
+                : null;
+            this.performanceCache = data ? JSON.parse(data) : this._createEmptyPerformanceData();
         } catch (error) {
             console.warn('Failed to parse performance data:', error);
             this.performanceCache = this._createEmptyPerformanceData();
@@ -286,9 +283,8 @@ const BileModelManager = {
         try {
             const data = JSON.stringify(this.performanceCache);
 
-            if (typeof BileStorage !== 'undefined') {
-                await BileStorage.set(this.PERFORMANCE_KEY, data);
-            } else {
+            // Use localStorage for performance data storage
+            if (typeof localStorage !== 'undefined') {
                 localStorage.setItem(this.PERFORMANCE_KEY, data);
             }
         } catch (error) {

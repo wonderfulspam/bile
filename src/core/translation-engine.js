@@ -3,20 +3,20 @@
  * Advanced translation orchestration with chunking, quality validation, and context awareness
  */
 
-// BileConstants is available globally from constants.js in userscript build  
+// BileConstants is available globally from constants.js in userscript build
 // For Node.js usage, manually require constants.js before using this module
 
 class BileTranslationEngine {
     constructor(apiKey, options = {}) {
         // Load API client module depending on environment
-        const ApiClient = options.ApiClient || 
+        const ApiClient = options.ApiClient ||
             (typeof require !== 'undefined' ? require('./api-client.js') : window.BileCoreApiClient);
-        
+
         this.apiClient = new ApiClient(apiKey, options);
         this.chunkSize = options.chunkSize || 1200;
         this.maxRetries = options.maxRetries || 3;
         this.debug = options.debug || false;
-        
+
         // Translation quality thresholds
         this.qualityThresholds = {
             minimum: 0.6,
@@ -35,7 +35,7 @@ class BileTranslationEngine {
     async translateContent(content, targetLang = 'en', options = {}) {
         try {
             const startTime = Date.now();
-            
+
             if (this.debug) {
                 console.log('Starting translation:', {
                     title: content.title || 'Untitled',
@@ -46,7 +46,7 @@ class BileTranslationEngine {
 
             // Normalize content structure
             const normalizedContent = this._normalizeContent(content);
-            
+
             // Check if chunking is needed
             const textLength = this._estimateTextLength(normalizedContent);
             const needsChunking = textLength > this.chunkSize;
@@ -65,7 +65,7 @@ class BileTranslationEngine {
             }
 
             const duration = Date.now() - startTime;
-            
+
             if (this.debug) {
                 console.log(`Translation completed in ${duration}ms`);
             }
@@ -104,7 +104,7 @@ class BileTranslationEngine {
             title: 'Text Translation',
             content: [{ type: 'paragraph', text: text }]
         };
-        
+
         return await this.translateContent(content, targetLang);
     }
 
@@ -129,7 +129,7 @@ class BileTranslationEngine {
 
         // Handle different content field names (content, sections, etc.)
         const contentArray = content.content || content.sections || [];
-        
+
         if (Array.isArray(contentArray)) {
             normalized.content = contentArray.map(section => {
                 if (typeof section === 'string') {
@@ -152,13 +152,13 @@ class BileTranslationEngine {
      */
     _estimateTextLength(content) {
         let total = (content.title || '').length;
-        
+
         if (content.content && Array.isArray(content.content)) {
             total += content.content.reduce((sum, section) => {
                 return sum + (section.text || section.content || '').length;
             }, 0);
         }
-        
+
         return total;
     }
 
@@ -169,10 +169,10 @@ class BileTranslationEngine {
     async _translateInChunks(content, targetLang, options = {}) {
         const chunks = this._splitIntoChunks(content);
         const translatedChunks = [];
-        
+
         for (let i = 0; i < chunks.length; i++) {
             const chunk = chunks[i];
-            
+
             if (this.debug) {
                 console.log(`Translating chunk ${i + 1}/${chunks.length} (${this._estimateTextLength(chunk)} chars)`);
             }
@@ -180,7 +180,7 @@ class BileTranslationEngine {
             try {
                 const translated = await this.apiClient.translate(chunk, targetLang, options);
                 translatedChunks.push(translated);
-                
+
                 // Brief delay between chunks to be respectful to the API
                 if (i < chunks.length - 1) {
                     await this._delay(500);
@@ -210,7 +210,7 @@ class BileTranslationEngine {
 
         for (const section of content.content) {
             const sectionLength = (section.text || section.content || '').length;
-            
+
             if (currentLength + sectionLength > this.chunkSize && currentChunk.content.length > 0) {
                 // Start new chunk
                 chunks.push(currentChunk);
@@ -308,24 +308,24 @@ class BileTranslationEngine {
     _assessTranslationQuality(translationResult) {
         try {
             let score = 0.5; // Base score
-            
+
             if (translationResult && translationResult.content) {
                 // Check if we have actual translated content
                 if (Array.isArray(translationResult.content) && translationResult.content.length > 0) {
                     score += 0.2;
-                    
+
                     // Check for quality indicators
-                    const hasTranslations = translationResult.content.some(item => 
+                    const hasTranslations = translationResult.content.some(item =>
                         item.translated && item.translated !== item.original);
                     if (hasTranslations) score += 0.2;
-                    
+
                     // Check for slang explanations
-                    const hasSlangTerms = translationResult.content.some(item => 
+                    const hasSlangTerms = translationResult.content.some(item =>
                         item.slang_terms && item.slang_terms.length > 0);
                     if (hasSlangTerms) score += 0.1;
                 }
             }
-            
+
             return Math.min(score, 1.0);
         } catch {
             return 0.5; // Fallback score
@@ -342,7 +342,7 @@ class BileTranslationEngine {
         if (this.debug) {
             console.log(`Translation performance for ${model}:`, metrics);
         }
-        
+
         // In a full implementation, this would store metrics for model selection optimization
         // For now, we just log them
     }

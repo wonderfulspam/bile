@@ -79,8 +79,13 @@ const BileBrowserUtils = {
         const langCode = lang.split('-')[0].toLowerCase();
 
         // Use core utils for language support check
-        const coreUtils = window.BileCoreUtils || require('../core/utils.js');
-        return coreUtils.SUPPORTED_LANGUAGES[langCode] ? langCode : 'en';
+        const coreUtils = window.BileCoreUtils;
+        if (coreUtils && coreUtils.SUPPORTED_LANGUAGES) {
+            return coreUtils.SUPPORTED_LANGUAGES[langCode] ? langCode : 'en';
+        }
+        // Fallback for common languages
+        const supportedLangs = ['en', 'de', 'fr', 'es'];
+        return supportedLangs.includes(langCode) ? langCode : 'en';
     },
 
     /**
@@ -138,7 +143,7 @@ const BileBrowserUtils = {
 
     /**
      * Create common modal overlay styles
-     * @param {Object} options - Style customization options  
+     * @param {Object} options - Style customization options
      * @returns {string} CSS text for modal overlay
      */
     getModalOverlayStyles(options = {}) {
@@ -146,7 +151,7 @@ const BileBrowserUtils = {
             background = 'rgba(0, 0, 0, 0.5)',
             zIndex = '2147483647'
         } = options;
-        
+
         return `
             position: fixed;
             top: 0;
@@ -266,8 +271,8 @@ const BileBrowserUtils = {
         const htmlLang = document.documentElement.lang;
         if (htmlLang) {
             const langCode = htmlLang.split('-')[0].toLowerCase();
-            const coreUtils = window.BileCoreUtils || require('../core/utils.js');
-            if (coreUtils.SUPPORTED_LANGUAGES[langCode]) {
+            const coreUtils = window.BileCoreUtils;
+            if (coreUtils && coreUtils.SUPPORTED_LANGUAGES && coreUtils.SUPPORTED_LANGUAGES[langCode]) {
                 return langCode;
             }
         }
@@ -276,8 +281,8 @@ const BileBrowserUtils = {
         const metaLang = document.querySelector('meta[http-equiv="content-language"]')?.content;
         if (metaLang) {
             const langCode = metaLang.split('-')[0].toLowerCase();
-            const coreUtils = window.BileCoreUtils || require('../core/utils.js');
-            if (coreUtils.SUPPORTED_LANGUAGES[langCode]) {
+            const coreUtils = window.BileCoreUtils;
+            if (coreUtils && coreUtils.SUPPORTED_LANGUAGES && coreUtils.SUPPORTED_LANGUAGES[langCode]) {
                 return langCode;
             }
         }
@@ -344,4 +349,6 @@ const BileBrowserUtils = {
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = BileBrowserUtils;
+} else if (typeof window !== 'undefined') {
+    window.BileBrowserUtils = BileBrowserUtils;
 }

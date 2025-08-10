@@ -5,12 +5,7 @@
  * Uses only core modules (no browser dependencies)
  */
 
-// Load environment variables from .env file
-try {
-    require('dotenv').config();
-} catch (error) {
-    // dotenv not available, continue with system env vars
-}
+// Environment variables loaded via Node.js --env-file flag or system env
 
 const fs = require('fs');
 const path = require('path');
@@ -21,6 +16,7 @@ const BileCoreApiClient = require('./core/api-client.js');
 const BileTranslationEngine = require('./core/translation-engine.js');
 const BileContentAnalyzer = require('./core/content-analyzer.js');
 const BileModelManager = require('./core/model-manager.js');
+const CliContentExtractor = require('./cli/content-extractor-cli.js');
 
 // Simple storage implementation for CLI
 class CliStorage {
@@ -124,12 +120,12 @@ Usage:
 
 Configuration:
   bile config language <lang>  # Set target language (en, de, es, fr, etc.)
-  bile provider openrouter     # Use OpenRouter  
+  bile provider openrouter     # Use OpenRouter
   bile provider groq           # Use Groq (faster)
 
 Environment Variables:
   OPENROUTER_API_KEY          # OpenRouter API key
-  GROQ_API_KEY                # Groq API key  
+  GROQ_API_KEY                # Groq API key
   BILE_API_PROVIDER           # Provider selection (openrouter, groq)
 
 Examples:
@@ -144,7 +140,7 @@ Examples:
      * Run tests
      */
     async runTests() {
-        const BileCliTester = require('../scripts/test-cli.js');
+        const BileCliTester = require('../test/cli.js');
         const tester = new BileCliTester();
         await tester.runTests();
         await tester.testWithSampleContent();
@@ -177,26 +173,26 @@ Examples:
             console.log(`🌍 Translating ${filePath} to ${targetLang}...`);
 
             // Read and parse content
-            const content = this.parseContentFile(filePath);
-            
+            const content = await this.parseContentFile(filePath);
+
             // Create unified client
             const client = BileCoreApiClient.create({ debug: true });
-            
+
             // Translate content
             const result = await client.translate(content, targetLang);
-            
-            // Output result
-            const outputFile = filePath.replace(/\.(txt|json)$/, `.${targetLang}.json`);
+
+            // Output result - create proper output filename for all file types
+            const outputFile = filePath.replace(/\.(txt|json|html)$/, `.${targetLang}.json`) || `${filePath}.${targetLang}.json`;
             fs.writeFileSync(outputFile, JSON.stringify(result, null, 2));
-            
+
             console.log(`✅ Translation complete! Output saved to: ${outputFile}`);
-            
+
             // Show summary
             console.log(`\nSummary:`);
             console.log(`- Source language: ${result.source_language || 'auto-detected'}`);
             console.log(`- Target language: ${result.target_language}`);
             console.log(`- Paragraphs: ${result.content?.length || 0}`);
-            
+
         } catch (error) {
             console.error('❌ Translation failed:', error.message);
         }
@@ -222,18 +218,18 @@ Examples:
             console.log(`📊 Analyzing ${filePath}...`);
 
             // Read and parse content
-            const content = this.parseContentFile(filePath);
-            
+            const content = await this.parseContentFile(filePath);
+
             // Analyze content
             const analysis = BileContentAnalyzer.analyzeContentStructure(content);
-            
+
             // Display results
             console.log(`\nContent Analysis:`);
             console.log(`- Structure: ${analysis.structure || 'unknown'}`);
             console.log(`- Complexity: ${analysis.complexity || 'unknown'}`);
             console.log(`- Sections: ${analysis.sections || 0}`);
             console.log(`- Readability Score: ${analysis.readabilityScore || 'N/A'}`);
-            
+
             if (analysis.outline) {
                 console.log(`\nOutline:`);
                 analysis.outline.forEach((item, i) => {
@@ -246,12 +242,12 @@ Examples:
             const detectedLang = BileCoreUtils.detectLanguage(fullText);
             const wordCount = BileCoreUtils.getWordCount(fullText);
             const readingTime = BileCoreUtils.estimateReadingTime(fullText);
-            
+
             console.log(`\nText Analysis:`);
             console.log(`- Detected language: ${detectedLang}`);
             console.log(`- Word count: ${wordCount}`);
             console.log(`- Reading time: ${readingTime} minutes`);
-            
+
         } catch (error) {
             console.error('❌ Analysis failed:', error.message);
         }
@@ -265,7 +261,7 @@ Examples:
             // Show all configuration
             const apiKey = await this.storage.getApiKey();
             const language = await this.storage.getTargetLanguage();
-            
+
             console.log('Configuration:');
             console.log(`- API Key: ${apiKey ? '***configured***' : 'not set'}`);
             console.log(`- Target Language: ${language}`);
@@ -317,14 +313,14 @@ Examples:
      */
     async modelsCommand() {
         console.log('🤖 Available Models:');
-        
+
         try {
             const bestModel = BileModelManager.getBestAvailableModel();
             console.log(`- Best model: ${bestModel?.name || 'none'}`);
-            
+
             const fallbackModel = BileModelManager.getFallbackModel();
             console.log(`- Fallback model: ${fallbackModel?.name || 'none'}`);
-            
+
             console.log('\nAll supported models:');
             // If model manager has a method to list all models
             if (BileModelManager.getAllModels) {
@@ -345,25 +341,25 @@ Examples:
         if (args.length === 0) {
             // Show current provider status
             console.log('🔌 API Provider Status:');
-            
+
             const currentProvider = process.env.BILE_API_PROVIDER || 'groq';
             console.log(`Current provider: ${currentProvider}`);
-            
+
             // Test connections
             const providers = ['openrouter', 'groq'];
             for (const provider of providers) {
                 try {
-                    const client = BileCoreApiClient.create({ 
-                        provider, 
-                        debug: false 
+                    const client = BileCoreApiClient.create({
+                        provider,
+                        debug: false
                     });
-                    
+
                     const config = await client.getConfig();
                     const hasKey = config.hasApiKey;
                     const status = hasKey ? '✅ Ready' : '❌ No API key';
-                    
+
                     console.log(`- ${provider}: ${status}`);
-                    
+
                     if (hasKey && provider === currentProvider) {
                         console.log(`  Testing connection...`);
                         const connected = await client.testConnection();
@@ -378,7 +374,7 @@ Examples:
 
         const provider = args[0].toLowerCase();
         const validProviders = ['openrouter', 'groq'];
-        
+
         if (!validProviders.includes(provider)) {
             console.error(`❌ Invalid provider: ${provider}`);
             console.log(`Valid providers: ${validProviders.join(', ')}`);
@@ -388,44 +384,60 @@ Examples:
         // Test the provider before switching
         try {
             console.log(`🔍 Testing ${provider} connection...`);
-            const client = UnifiedApiClient.create({ 
-                provider, 
-                debug: false 
+            const client = new BileCoreApiClient({
+                provider,
+                debug: false
             });
-            
+
             const config = client.getConfig();
             if (!config.hasApiKey) {
                 const keyVar = provider === 'groq' ? 'GROQ_API_KEY' : 'OPENROUTER_API_KEY';
                 console.error(`❌ ${keyVar} not found in environment`);
                 return;
             }
-            
+
             const connected = await client.testConnection();
             if (!connected) {
                 console.error(`❌ Failed to connect to ${provider}`);
                 return;
             }
-            
+
             console.log(`✅ ${provider} connection successful`);
             console.log(`💡 To make this permanent, add to .env file:`);
             console.log(`   BILE_API_PROVIDER=${provider}`);
-            
+
         } catch (error) {
             console.error(`❌ Provider test failed: ${error.message}`);
         }
     }
 
     /**
-     * Parse content file (supports txt and json)
+     * Parse content file (supports txt, json, and html)
      */
-    parseContentFile(filePath) {
+    async parseContentFile(filePath) {
         const ext = path.extname(filePath).toLowerCase();
-        const content = fs.readFileSync(filePath, 'utf8');
 
-        if (ext === '.json') {
+        if (ext === '.html' || ext === '.htm') {
+            // HTML file - use content extractor
+            console.log('🔍 Extracting content from HTML file...');
+            const result = await CliContentExtractor.extractFromFile(filePath);
+
+            if (!result.success) {
+                throw new Error(`Content extraction failed: ${result.error || 'Unknown error'}`);
+            }
+
+            console.log(`   ✅ Extracted using ${result.method} method (confidence: ${(result.confidence * 100).toFixed(0)}%)`);
+            console.log(`   📄 Title: ${result.content.title}`);
+            console.log(`   📝 Content sections: ${result.content.content?.length || 0}`);
+
+            return result.content;
+
+        } else if (ext === '.json') {
+            const content = fs.readFileSync(filePath, 'utf8');
             return JSON.parse(content);
         } else {
             // Plain text - create basic structure
+            const content = fs.readFileSync(filePath, 'utf8');
             const lines = content.split('\n').filter(line => line.trim());
             const title = lines[0] || 'Untitled';
             const paragraphs = lines.slice(1).map(line => ({

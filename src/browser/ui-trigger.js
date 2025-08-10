@@ -6,7 +6,10 @@
 const BileUI = {
     // UI Configuration
     BUTTON_ID: 'bile-trigger-button',
-    KEYBOARD_SHORTCUT: 'ctrlKey+shiftKey+KeyB',
+    KEYBOARD_SHORTCUTS: {
+        TRANSLATE: 'Ctrl+Shift+B',
+        SWITCH_PROVIDER: 'Ctrl+Shift+P'
+    },
 
     // Button positions
     POSITIONS: {
@@ -97,6 +100,13 @@ const BileUI = {
         // Click handler
         button.addEventListener('click', this.handleTriggerClick.bind(this));
 
+        // Right-click handler for provider switching
+        button.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.switchProvider();
+        });
+
         // Prevent button from interfering with page
         button.addEventListener('mousedown', (e) => e.stopPropagation());
         button.addEventListener('mouseup', (e) => e.stopPropagation());
@@ -113,8 +123,10 @@ const BileUI = {
 
             this.showProcessingIndicator();
 
-            // Check if API key exists
-            this.updateProcessingStatus('Checking API configuration...', 'Validating OpenRouter API key');
+            // Check if API key exists for current provider
+            const currentProvider = await BileStorage.getProvider();
+            const providerName = currentProvider === 'groq' ? 'Groq' : 'OpenRouter';
+            this.updateProcessingStatus('Checking API configuration...', `Validating ${providerName} API key`);
             if (!await BileStorage.hasApiKey()) {
                 this.updateProcessingStatus('API key required');
                 const success = await this._promptForApiKey();
@@ -156,15 +168,15 @@ const BileUI = {
             this.updateProcessingStatus('API connection successful');
 
             // Get target language preference
-            const preferences = await BileStorage.getPreferences();
-            const targetLang = preferences.targetLanguage || 'en';
+            const targetLang = await BileStorage.getLanguagePreference() || 'en';
 
             // Detect source language for better translation context
-            const sourceLanguage = BileApiClient._detectLanguage(
-                typeof contentResult.content === 'string'
-                    ? contentResult.content
-                    : JSON.stringify(contentResult.content)
-            );
+            const contentText = typeof contentResult.content === 'string'
+                ? contentResult.content
+                : JSON.stringify(contentResult.content);
+            const sourceLanguage = BileUtils && BileUtils.detectLanguage
+                ? BileUtils.detectLanguage(contentText)
+                : 'auto';
 
             this.updateProcessingStatus(`Source: ${sourceLanguage.toUpperCase()} → Target: ${targetLang.toUpperCase()}`);
 
@@ -219,27 +231,59 @@ const BileUI = {
     },
 
     /**
-     * Prompt user for API key
+     * Prompt user for provider selection and API key
      * @private
      * @returns {Promise<boolean>} True if key was successfully stored
      */
     async _promptForApiKey() {
-        const apiKey = prompt(`Bile needs your OpenRouter API key to function.
+        // First, let user choose provider
+        const providerChoice = confirm(`Choose your AI provider:
 
-Get your FREE API key from: https://openrouter.ai/keys
-- Create an account (free)
-- Generate an API key
-- No credit card required for free models!
+✅ GROQ (Recommended - Fastest)
+• Free tier: 8,000 tokens/minute
+• Very fast responses
+• Get key from: https://console.groq.com
+
+❌ OPENROUTER (Alternative)
+• Free tier: Various models
+• Slower but more model options
+• Get key from: https://openrouter.ai/keys
+
+Click OK for Groq (recommended) or Cancel for OpenRouter:`);
+
+        const provider = providerChoice ? 'groq' : 'openrouter';
+
+        // Get the appropriate API key
+        let apiKey;
+        if (provider === 'groq') {
+            apiKey = prompt(`Get your FREE Groq API key from: https://console.groq.com
+
+• Create account (free)
+• Generate API key
+• 8,000 tokens/minute limit (very fast!)
+
+Enter your Groq API key:`);
+        } else {
+            apiKey = prompt(`Get your FREE OpenRouter API key from: https://openrouter.ai/keys
+
+• Create an account (free)
+• Generate an API key
+• No credit card required for free models!
 
 Enter your OpenRouter API key:`);
+        }
 
         if (!apiKey) {
             return false;
         }
 
         try {
-            await BileStorage.storeApiKey(apiKey);
-            this._showSuccessMessage('OpenRouter API key saved successfully!');
+            // Store the API key and set the provider
+            await BileStorage.setApiKey(provider, apiKey);
+            await BileStorage.setProvider(provider);
+
+            const providerName = provider === 'groq' ? 'Groq' : 'OpenRouter';
+            this._showSuccessMessage(`${providerName} API key saved successfully!`);
             return true;
         } catch (error) {
             this._showErrorMessage(`Invalid API key: ${error.message}`);
@@ -248,14 +292,52 @@ Enter your OpenRouter API key:`);
     },
 
     /**
+     * Allow user to switch providers and update API key
+     * @returns {Promise<boolean>} True if provider was successfully switched
+     */
+    async switchProvider() {
+        const currentProvider = await BileStorage.getProvider();
+        const currentProviderName = currentProvider === 'groq' ? 'Groq' : 'OpenRouter';
+
+        const switchChoice = confirm(`Current provider: ${currentProviderName}
+
+Would you like to switch to ${currentProvider === 'groq' ? 'OpenRouter' : 'Groq'}?
+
+Click OK to switch providers, or Cancel to keep current provider.`);
+
+        if (!switchChoice) {
+            return false;
+        }
+
+        // Switch to the other provider
+        const newProvider = currentProvider === 'groq' ? 'openrouter' : 'groq';
+
+        // Check if user already has API key for the new provider
+        const existingKey = await BileStorage.getApiKey(newProvider);
+        if (existingKey) {
+            await BileStorage.setProvider(newProvider);
+            const newProviderName = newProvider === 'groq' ? 'Groq' : 'OpenRouter';
+            this._showSuccessMessage(`Switched to ${newProviderName} successfully!`);
+            return true;
+        }
+
+        // If no existing key, prompt for new API key
+        return await this._promptForApiKey();
+    },
+
+    /**
      * Extract content using Phase 2 content extraction modules
      * @private
      * @returns {Promise<ContentResult>} Extraction result
      */
     async _extractContent() {
-        // Use BileContentExtractor if available, fallback to basic extraction
-        if (typeof BileContentExtractor !== 'undefined') {
-            return await BileContentExtractor.extractArticleContent(document);
+        // Use CoreContentExtractor (runtime-agnostic), fallback to basic extraction
+        if (typeof CoreContentExtractor !== 'undefined') {
+            const extractor = new CoreContentExtractor();
+            return await extractor.extractArticleContent(document, {
+                domain: window.location.hostname,
+                url: window.location.href
+            });
         } else {
             // Fallback to basic extraction for backward compatibility
             const basicContent = this._extractBasicContent();
@@ -289,8 +371,8 @@ Enter your OpenRouter API key:`);
 
         // Look for common article containers - use shared selectors
         const BileConstants = window.BileConstants;
-        const articleSelectors = BileConstants ? 
-            BileConstants.UI_SELECTORS.ARTICLE_CONTAINERS : 
+        const articleSelectors = BileConstants ?
+            BileConstants.UI_SELECTORS.ARTICLE_CONTAINERS :
             [
                 'article', '[role="article"]', '.article-content', '.article-body',
                 '.post-content', '.entry-content', '.content-body',
@@ -729,10 +811,13 @@ Enter your OpenRouter API key:`);
     },
 
     /**
-     * Register keyboard shortcut (Ctrl+Shift+B)
+     * Register keyboard shortcuts:
+     * - Ctrl+Shift+B: Trigger translation
+     * - Ctrl+Shift+P: Switch provider
      */
     registerKeyboardShortcut() {
         document.addEventListener('keydown', (event) => {
+            // Ctrl+Shift+B: Trigger translation
             if (event.ctrlKey && event.shiftKey && event.code === 'KeyB') {
                 event.preventDefault();
                 event.stopPropagation();
@@ -741,6 +826,13 @@ Enter your OpenRouter API key:`);
                 if (button && !button.disabled) {
                     this.handleTriggerClick(event);
                 }
+            }
+            // Ctrl+Shift+P: Switch provider
+            else if (event.ctrlKey && event.shiftKey && event.code === 'KeyP') {
+                event.preventDefault();
+                event.stopPropagation();
+
+                this.switchProvider();
             }
         }, true);
     },

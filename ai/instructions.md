@@ -29,7 +29,7 @@ Bile is a bilingual web page converter for language learning using OpenRouter's 
 **Development Tools:**
 
 - **[../src/cli.js](../src/cli.js)** - CLI entry point for testing
-- **[../scripts/test-cli.js](../scripts/test-cli.js)** - CLI test suite
+- **[../test/cli.js](../test/cli.js)** - CLI test suite
 - **[../scripts/build-userscript.js](../scripts/build-userscript.js)** - Build system
 
 **Documentation & Status:**

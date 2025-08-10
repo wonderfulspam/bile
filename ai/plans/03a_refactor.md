@@ -77,11 +77,11 @@ class Translator {
             }),
             signal: AbortSignal.timeout(this.timeout)
         });
-        
+
         if (!response.ok) {
             throw new Error(`API error: ${response.status}`);
         }
-        
+
         return response.json();
     }
 }
@@ -113,32 +113,32 @@ class BileCLI {
 
     async processUrl(url, targetLang = 'en') {
         console.log(`Fetching: ${url}`);
-        
+
         // Fetch the webpage
         const response = await fetch(url);
         const html = await response.text();
-        
+
         // Extract content using JSDOM
         const dom = new JSDOM(html, { url });
         const content = this.extractor.extract(dom.window.document, url);
-        
+
         console.log(`Extracted: ${content.title}`);
         console.log(`Sections: ${content.sections.length}`);
         console.log(`Total text: ${content.totalChars} chars`);
-        
+
         // Translate
         console.log(`Translating to ${targetLang}...`);
         const translated = await this.translator.translate(content, targetLang);
-        
+
         // Generate HTML
         const bilingualHtml = this.generator.generate(translated);
-        
+
         return bilingualHtml;
     }
 
     async processFile(filePath, targetLang = 'en') {
         const content = fs.readFileSync(filePath, 'utf8');
-        
+
         // Try to parse as JSON (pre-extracted content)
         try {
             const extracted = JSON.parse(content);
@@ -146,7 +146,7 @@ class BileCLI {
             return this.generator.generate(translated);
         } catch {
             // Treat as raw text
-            const translated = await this.translator.translate({ 
+            const translated = await this.translator.translate({
                 title: 'Text Document',
                 sections: [{ type: 'paragraph', text: content }]
             }, targetLang);
@@ -158,13 +158,13 @@ class BileCLI {
         // Quick test mode for debugging
         console.log(`Testing with ${content.length} chars...`);
         const start = Date.now();
-        
+
         try {
             const result = await this.translator.translate({
                 title: 'Test',
                 sections: [{ text: content }]
             }, targetLang);
-            
+
             console.log(`✓ Success in ${Date.now() - start}ms`);
             return result;
         } catch (error) {
@@ -177,52 +177,52 @@ class BileCLI {
 // CLI interface
 if (require.main === module) {
     const args = process.argv.slice(2);
-    
+
     const command = args[0];
     const apiKey = process.env.OPENROUTER_API_KEY;
-    
+
     if (!apiKey) {
         console.error('Error: Set OPENROUTER_API_KEY environment variable');
         process.exit(1);
     }
-    
+
     const options = {
         model: args.find(a => a.startsWith('--model='))?.split('=')[1],
         timeout: parseInt(args.find(a => a.startsWith('--timeout='))?.split('=')[1] || '30000'),
         debug: args.includes('--debug')
     };
-    
+
     const cli = new BileCLI(apiKey, options);
-    
+
     async function run() {
         try {
             let result;
-            
+
             if (command.startsWith('http')) {
                 // Process URL
                 const targetLang = args.find(a => a.startsWith('--lang='))?.split('=')[1] || 'en';
                 result = await cli.processUrl(command, targetLang);
-                
+
                 // Save output
                 const output = args.find(a => a.startsWith('--output='))?.split('=')[1] || 'output.html';
                 fs.writeFileSync(output, result);
                 console.log(`Saved to: ${output}`);
-                
+
             } else if (command === 'test') {
                 // Test mode
                 const content = args.find(a => a.startsWith('--content='))?.split('=')[1] || 'Hallo Welt';
                 result = await cli.test(content);
                 console.log(JSON.stringify(result, null, 2));
-                
+
             } else if (fs.existsSync(command)) {
                 // Process file
                 const targetLang = args.find(a => a.startsWith('--lang='))?.split('=')[1] || 'en';
                 result = await cli.processFile(command, targetLang);
-                
+
                 const output = args.find(a => a.startsWith('--output='))?.split('=')[1] || 'output.html';
                 fs.writeFileSync(output, result);
                 console.log(`Saved to: ${output}`);
-                
+
             } else {
                 console.log(`
 Bile CLI - Bilingual Web Page Converter
@@ -256,7 +256,7 @@ Environment:
             process.exit(1);
         }
     }
-    
+
     run();
 }
 ```
@@ -269,12 +269,12 @@ Thin wrapper that uses the core modules:
 // src/browser/userscript.js
 (async function() {
     'use strict';
-    
+
     // Import core translator (bundled by build script)
     const translator = new Translator(await getApiKey(), {
         model: await getSelectedModel()
     });
-    
+
     // UI trigger
     createBileButton({
         onClick: async () => {

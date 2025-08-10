@@ -2,28 +2,17 @@
 
 **Updated:** January 2025
 
-## ✅ Completed
+## ✅ Completed Plans
 
-- **Phase 1-3**: Working browser userscript with OpenRouter API integration
-- **CLI Architecture**: Clean separation between `src/core/` (CLI-ready) and `src/browser/` (browser-specific)
-- **Build System**: Generates `dist/bile.user.js` from modular components
-- **Testing**: CLI test suite with 10/10 tests passing
+- **Phase 1**: `01_implementation_plan.md` - Basic userscript and API integration
+- **Phase 2**: `02_implementation_plan.md` - Content extraction and translation pipeline
+- **Phase 3**: `03_implementation_plan.md` - Multi-provider architecture
+- **Phase 3 Refactor**: `03a_refactor.md` through `03d_finish_refactor.md` - Code unification and quality polish
 
 ## 📋 Current Status
 
-**All major functionality complete.** The project has:
+**Phase 3 complete.** Bilingual userscript working with excellent quality slang term highlighting, CLI-browser parity achieved, production-ready codebase.
 
-- Working browser userscript for production use
-- CLI development environment for rapid testing
-- Complete core translation functionality
-- Site-specific content extraction for major news sites
+## 🎯 Next Step
 
-## 🎯 Next Steps
-
-Performance optimizations. The userscript currently times out when trying to translate and we need to find and fix the issue locally using the new CLI.
-
-Potential future enhancements:
-
-- Additional language support
-- More news site extraction rules
-- Browser extension version
+**Phase 4**: Create implementation plan for production deployment and user testing.

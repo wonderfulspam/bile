@@ -194,10 +194,56 @@ const BileCoreUtils = {
      */
     generateId(prefix = 'bile') {
         return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    },
+
+    /**
+     * Walk content elements (DOM-agnostic version)
+     * Works with both browser DOM and JSDOM
+     * @param {Element} container - Container element to walk
+     * @param {Array} allowedTags - Array of allowed tag names
+     * @param {Function} elementProcessor - Function to process each element
+     * @returns {Array} Array of processed elements
+     */
+    walkContentElements(container, allowedTags, elementProcessor) {
+        const content = [];
+        const document = container.ownerDocument || container.document;
+
+        // Get NodeFilter from the document's window or use fallback
+        const NodeFilter = document.defaultView?.NodeFilter || {
+            SHOW_ELEMENT: 0x00000001,
+            FILTER_ACCEPT: 1,
+            FILTER_SKIP: 3
+        };
+
+        const walker = document.createTreeWalker(
+            container,
+            NodeFilter.SHOW_ELEMENT,
+            {
+                acceptNode: (node) => {
+                    const tagName = node.tagName.toLowerCase();
+                    if (allowedTags.includes(tagName)) {
+                        return NodeFilter.FILTER_ACCEPT;
+                    }
+                    return NodeFilter.FILTER_SKIP;
+                }
+            }
+        );
+
+        let node;
+        while (node = walker.nextNode()) {
+            const element = elementProcessor(node);
+            if (element) {
+                content.push(element);
+            }
+        }
+
+        return content;
     }
 };
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = BileCoreUtils;
+} else if (typeof window !== 'undefined') {
+    window.BileCoreUtils = BileCoreUtils;
 }

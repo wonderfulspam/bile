@@ -34,7 +34,7 @@ class BileCoreApiClient {
         this.config = await this._loadConfig(this.options);
         this.client = this._createProviderClient();
         this._initialized = true;
-        
+
         if (this.debug) {
             console.log(`Initialized API client with provider: ${this.config.provider}`);
         }
@@ -43,9 +43,9 @@ class BileCoreApiClient {
     async _loadConfig(options) {
         // Check if running in browser environment
         const isBrowser = typeof window !== 'undefined' && typeof BileStorage !== 'undefined';
-        
+
         let provider, targetLanguage, openrouterKey, groqKey;
-        
+
         if (isBrowser) {
             // Load from browser storage
             provider = await BileStorage.getProvider();
@@ -60,13 +60,13 @@ class BileCoreApiClient {
             openrouterKey = process.env.OPENROUTER_API_KEY;
             groqKey = process.env.GROQ_API_KEY;
         }
-        
+
         return {
             provider: options.provider || provider,
             targetLanguage: options.targetLanguage || targetLanguage,
             strategy: options.strategy || 'minimal',
             timeout: options.timeout || 30000,
-            
+
             // API keys from options or storage/environment
             openrouterKey: options.openrouterKey || openrouterKey,
             groqKey: options.groqKey || groqKey
@@ -111,9 +111,9 @@ class BileCoreApiClient {
      */
     async translate(content, targetLang = null, options = {}) {
         await this._initialize();
-        
+
         const lang = targetLang || this.config.targetLanguage;
-        
+
         if (this.debug) {
             console.log(`Translating with ${this.config.provider} to ${lang}`);
         }
@@ -122,18 +122,18 @@ class BileCoreApiClient {
             const startTime = Date.now();
             const result = await this.client.translate(content, lang, options);
             const duration = Date.now() - startTime;
-            
+
             // Add metadata
             result.metadata = {
                 ...result.metadata,
                 provider: this.config.provider,
                 duration: duration
             };
-            
+
             if (this.debug) {
                 console.log(`Translation completed in ${duration}ms using ${this.config.provider}`);
             }
-            
+
             return result;
         } catch (error) {
             if (this.debug) {
@@ -148,18 +148,18 @@ class BileCoreApiClient {
      */
     async testConnection() {
         await this._initialize();
-        
+
         if (this.debug) {
             console.log(`Testing connection with ${this.config.provider}...`);
         }
-        
+
         try {
             const result = await this.client.testConnection();
-            
+
             if (this.debug) {
                 console.log(`Connection test ${result ? 'passed' : 'failed'} for ${this.config.provider}`);
             }
-            
+
             return result;
         } catch (error) {
             if (this.debug) {
@@ -174,7 +174,7 @@ class BileCoreApiClient {
      */
     async getConfig() {
         await this._initialize();
-        
+
         return {
             provider: this.config.provider,
             targetLanguage: this.config.targetLanguage,
@@ -189,7 +189,7 @@ class BileCoreApiClient {
      */
     async switchProvider(newProvider, options = {}) {
         await this._initialize();
-        
+
         if (this.debug) {
             console.log(`Switching from ${this.config.provider} to ${newProvider}`);
         }
@@ -197,11 +197,11 @@ class BileCoreApiClient {
         this.config.provider = newProvider;
         Object.assign(this.config, options);
         this.client = this._createProviderClient();
-        
+
         if (this.debug) {
             console.log(`Successfully switched to ${newProvider}`);
         }
-        
+
         // Save provider preference to storage if in browser
         if (typeof window !== 'undefined' && typeof BileStorage !== 'undefined') {
             await BileStorage.setProvider(newProvider);
@@ -232,19 +232,19 @@ class BileCoreApiClient {
     static async compareProviders(content, targetLang = 'en', options = {}) {
         const providers = ['groq', 'openrouter'];
         const results = {};
-        
+
         for (const provider of providers) {
             try {
-                const client = new BileCoreApiClient({ 
-                    ...options, 
+                const client = new BileCoreApiClient({
+                    ...options,
                     provider,
                     debug: options.debug || false
                 });
-                
+
                 const startTime = Date.now();
                 const result = await client.translate(content, targetLang);
                 const duration = Date.now() - startTime;
-                
+
                 results[provider] = {
                     success: true,
                     duration,
@@ -252,7 +252,7 @@ class BileCoreApiClient {
                     strategy: result.metadata?.strategy,
                     model: result.metadata?.model
                 };
-                
+
             } catch (error) {
                 results[provider] = {
                     success: false,
@@ -260,7 +260,7 @@ class BileCoreApiClient {
                 };
             }
         }
-        
+
         return results;
     }
 }

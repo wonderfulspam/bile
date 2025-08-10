@@ -5,12 +5,12 @@
 class OpenRouterClient {
     constructor(apiKey, options = {}) {
         this.apiKey = apiKey;
-        
+
         // OpenRouter-specific configuration
         this.apiUrl = options.apiUrl || 'https://openrouter.ai/api/v1/chat/completions';
         this.timeout = options.timeout || 30000;
         this.debug = options.debug || false;
-        
+
         // Optimization settings
         this.strategy = options.strategy || 'minimal'; // minimal, balanced, twopass
         this.preferredModel = options.model || 'qwen/qwen3-235b-a22b:free'; // Fastest model
@@ -22,7 +22,7 @@ class OpenRouterClient {
         // Ordered by speed (fastest first)
         return [
             'qwen/qwen3-235b-a22b:free',        // 9.6s
-            'microsoft/mai-ds-r1:free',         // 10.9s  
+            'microsoft/mai-ds-r1:free',         // 10.9s
             'moonshotai/kimi-k2:free',          // 12.3s
             'tngtech/deepseek-r1t2-chimera:free', // 15.2s
             'deepseek/deepseek-r1-0528:free'    // 32.7s (avoid)
@@ -34,7 +34,7 @@ class OpenRouterClient {
      */
     async translate(content, targetLang = 'en', options = {}) {
         const strategy = options.strategy || this.strategy;
-        
+
         try {
             switch (strategy) {
                 case 'minimal':
@@ -59,7 +59,7 @@ class OpenRouterClient {
      */
     async _translateMinimal(content, targetLang, options) {
         const prompt = this._buildMinimalPrompt(content, targetLang);
-        
+
         const response = await this._makeOptimizedRequest({
             messages: prompt,
             max_tokens: 1000,
@@ -75,7 +75,7 @@ class OpenRouterClient {
      */
     async _translateBalanced(content, targetLang, options) {
         const prompt = this._buildBalancedPrompt(content, targetLang);
-        
+
         const response = await this._makeOptimizedRequest({
             messages: prompt,
             max_tokens: 1500,
@@ -99,7 +99,7 @@ class OpenRouterClient {
             role: 'system',
             content: `Translate to ${targetLang}. Keep slang/cultural terms unchanged.`
         }, {
-            role: 'user', 
+            role: 'user',
             content: JSON.stringify(content)
         }];
 
@@ -141,7 +141,9 @@ class OpenRouterClient {
     _buildMinimalPrompt(content, targetLang) {
         return [{
             role: 'system',
-            content: `Translate to ${targetLang}. Mark slang with <s></s>. JSON: {"sl":"src","tl":"tgt","content":[{"orig":"","trans":"","slang":[{"term":"","tr":"","ex_orig":"","ex_tgt":""}]}]}`
+            content: `Translate to ${targetLang}. Identify slang/cultural terms. JSON: {"sl":"","tl":"${targetLang}","to":"","tt":"","content":[{"type":"paragraph","o":"","t":"","st":[{"tm":"","tr":"","eo":"","et":""}]}]}
+
+Keys: sl=source_language, tl=target_language, to=title_original, tt=title_translated, o=original, t=translated, st=slang_terms, tm=term, tr=translation, eo=explanation_original, et=explanation_translated. IMPORTANT: eo in SOURCE language, et in ${targetLang}.`
         }, {
             role: 'user',
             content: JSON.stringify(content)
@@ -205,7 +207,7 @@ class OpenRouterClient {
      */
     _parseMinimalResponse(response) {
         const content = response.choices[0].message.content;
-        
+
         // Clean up markdown if present
         let cleanContent = content;
         if (content.startsWith('```json')) {
@@ -214,23 +216,15 @@ class OpenRouterClient {
 
         try {
             const parsed = JSON.parse(cleanContent);
-            
-            // Convert minimal format to standard format
+            const expanded = this._expandAbbreviatedJson(parsed);
+
             return {
-                source_language: parsed.sl || 'auto',
-                target_language: parsed.tl || 'en',
-                title_original: parsed.title || '',
-                title_translated: parsed.title_tr || '',
-                content: parsed.content.map(item => ({
-                    type: 'paragraph',
-                    original: item.orig,
-                    translated: item.trans,
-                    slang_terms: item.slang || []
-                })),
+                ...expanded,
                 metadata: {
+                    provider: 'openrouter',
+                    model: this.preferredModel,
                     strategy: 'minimal',
                     usage: response.usage,
-                    model: this.preferredModel,
                     translatedAt: new Date().toISOString()
                 }
             };
@@ -239,12 +233,42 @@ class OpenRouterClient {
         }
     }
 
+    _expandAbbreviatedJson(abbrevResult) {
+        if (!abbrevResult) return abbrevResult;
+
+        // Expand main object
+        const expanded = {
+            source_language: abbrevResult.sl || abbrevResult.source_language,
+            target_language: abbrevResult.tl || abbrevResult.target_language,
+            title_original: abbrevResult.to || abbrevResult.title_original,
+            title_translated: abbrevResult.tt || abbrevResult.title_translated,
+            content: []
+        };
+
+        // Expand content array
+        if (abbrevResult.content && Array.isArray(abbrevResult.content)) {
+            expanded.content = abbrevResult.content.map(section => ({
+                type: section.type || 'paragraph',
+                original: section.o || section.original,
+                translated: section.t || section.translated,
+                slang_terms: section.st ? section.st.map(term => ({
+                    term: term.tm || term.term,
+                    translation: term.tr || term.translation,
+                    explanation_original: term.eo || term.explanation_original,
+                    explanation_translated: term.et || term.explanation_translated
+                })) : (section.slang_terms || [])
+            }));
+        }
+
+        return expanded;
+    }
+
     /**
      * Parse standard response format
      */
     _parseStandardResponse(response) {
         const content = response.choices[0].message.content;
-        
+
         let cleanContent = content;
         if (content.startsWith('```json')) {
             cleanContent = content.replace(/^```json\n/, '').replace(/\n```$/, '');
@@ -271,7 +295,7 @@ class OpenRouterClient {
      */
     _hasSlangTerms(text) {
         // Simple heuristic: look for preserved terms or cultural indicators
-        return text.includes('<s>') || 
+        return text.includes('<s>') ||
                text.includes('<slang>') ||
                /[A-Z][a-z]+(?:ing|ung|heit|keit|tion)/.test(text); // Common German/cultural patterns
     }
@@ -299,4 +323,6 @@ class OpenRouterClient {
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = OpenRouterClient;
+} else if (typeof window !== 'undefined') {
+    window.OpenRouterClient = OpenRouterClient;
 }

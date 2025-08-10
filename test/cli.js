@@ -55,7 +55,7 @@ class BileCliTester {
         await this.testApiClient();
         await this.testContentAnalyzer();
         await this.testModelManager();
-        
+
         // Only test translation engine if API key is available
         const apiKey = await this.storage.getApiKey();
         if (apiKey) {
@@ -162,7 +162,7 @@ class BileCliTester {
             const hasGetBestModel = typeof BileModelManager.getBestAvailableModel === 'function';
             this.assert(hasGetBestModel, 'Model manager has getBestAvailableModel method');
 
-            // Test model fallback logic  
+            // Test model fallback logic
             const hasGetFallbackModel = typeof BileModelManager.getFallbackModel === 'function';
             this.assert(hasGetFallbackModel, 'Model manager has getFallbackModel method');
         } catch (error) {
@@ -183,7 +183,7 @@ class BileCliTester {
             // Test with new client architecture
             const client = BileCoreApiClient.create({ debug: false });
             const config = await client.getConfig();
-            
+
             this.assert(client !== null, 'API client creation works');
 
             if (!config.hasApiKey) {
@@ -197,7 +197,7 @@ class BileCliTester {
 
             const result = await client.translate(testContent, 'de');
             this.assert(result !== null, 'Translation API call works', 'Got response from API');
-            
+
             console.log(`   ✅ API call successful using ${config.provider}!`);
         } catch (error) {
             console.log(`   ❌ API call failed: ${error.message}`);
@@ -225,7 +225,7 @@ class BileCliTester {
     printSummary() {
         console.log('========================');
         console.log(`🧪 Tests completed: ${this.testsPassed}/${this.testsTotal} passed`);
-        
+
         if (this.testsPassed === this.testsTotal) {
             console.log('🎉 All tests passed! CLI core is ready.');
         } else {
@@ -239,17 +239,17 @@ class BileCliTester {
      */
     async testWithSampleContent() {
         console.log('\n🔬 Testing with Sample Content...');
-        
+
         const sampleArticle = {
             title: 'Climate Change Impact on European Agriculture',
             content: [
-                { 
-                    type: 'paragraph', 
-                    text: 'Climate change is having a profound impact on agricultural practices across Europe. Farmers are adapting to new weather patterns and extreme events.' 
+                {
+                    type: 'paragraph',
+                    text: 'Climate change is having a profound impact on agricultural practices across Europe. Farmers are adapting to new weather patterns and extreme events.'
                 },
-                { 
-                    type: 'paragraph', 
-                    text: 'The Mediterranean region faces particular challenges with increased drought and heat waves affecting traditional crops like olives and grapes.' 
+                {
+                    type: 'paragraph',
+                    text: 'The Mediterranean region faces particular challenges with increased drought and heat waves affecting traditional crops like olives and grapes.'
                 }
             ]
         };
@@ -273,7 +273,7 @@ class BileCliTester {
 // CLI interface
 async function main() {
     const tester = new BileCliTester();
-    
+
     // Handle command line arguments
     const args = process.argv.slice(2);
     if (args.includes('--help')) {
@@ -282,8 +282,8 @@ Bile CLI Test Suite
 
 Usage:
   npm test                 # Run all tests
-  node scripts/test-cli.js # Run all tests directly
-  
+  node test/cli.js # Run all tests directly
+
 Environment Variables:
   OPENROUTER_API_KEY      # OpenRouter API key for translation tests
 

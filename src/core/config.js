@@ -55,14 +55,14 @@ const BileCoreConfig = {
     OPTIMIZATION: {
         // Use optimized minimal prompts for 50%+ speed improvement
         USE_MINIMAL_PROMPTS: true,
-        
+
         // Preferred model (fastest based on benchmarks)
         PREFERRED_MODEL: 'qwen/qwen3-235b-a22b:free',
-        
+
         // Strategy selection based on content
         STRATEGIES: {
             'minimal': 'Ultra-fast, 56% speed improvement, good quality',
-            'balanced': 'Good speed/quality balance, 40% improvement', 
+            'balanced': 'Good speed/quality balance, 40% improvement',
             'twopass': 'Best for content with few slang terms, 41% improvement',
             'full': 'Maximum quality, slowest (baseline)'
         }
@@ -117,7 +117,7 @@ const BileCoreConfig = {
     }
   ]
 }`,
-        
+
         TRANSLATION_RESPONSE: `{
   "translations": [
     {

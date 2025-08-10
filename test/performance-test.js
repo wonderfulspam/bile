@@ -1,24 +1,18 @@
 #!/usr/bin/env node
 
 /**
- * Performance Test Suite - Comprehensive API timing analysis
+ * Performance Test Suite - Focused API timing analysis with Groq default
  */
 
-// Load environment variables from .env file
-try {
-    require('dotenv').config();
-} catch (error) {
-    // dotenv not available, continue with system env vars
-}
+// Environment variables loaded via Node.js --env-file flag or system env
 
 const BileCoreApiClient = require('../src/core/api-client.js');
 const BileTranslationEngine = require('../src/core/translation-engine.js');
-const fs = require('fs');
+const BileCoreUtils = require('../src/core/utils.js');
 
 class PerformanceTestSuite {
     constructor() {
         this.results = [];
-        // Use new client architecture instead of hardcoding API key
         this.client = BileCoreApiClient.create({ debug: false });
     }
 
@@ -28,32 +22,32 @@ class PerformanceTestSuite {
 
         // Test 1: API Client initialization and configuration
         await this.testApiClientSetup();
-        
+
         // Test 2: Timeout behavior with different settings
         await this.testTimeoutBehaviors();
-        
+
         // Test 3: Content size impact on performance
         await this.testContentSizes();
-        
-        // Test 4: Real API calls with timing
+
+        // Test 4: Real API calls with timing (Groq preferred)
         const config = await this.client.getConfig();
         if (config.hasApiKey) {
             await this.testRealApiCalls();
         } else {
             console.log('⚠️  No API key - skipping real API tests');
-            console.log('   Set OPENROUTER_API_KEY or GROQ_API_KEY to test actual performance\n');
+            console.log('   Set GROQ_API_KEY (preferred) or OPENROUTER_API_KEY to test performance\n');
         }
-        
+
         // Test 5: Model failover logic
         await this.testModelFailover();
-        
+
         // Summary
         this.printSummary();
     }
 
     async testApiClientSetup() {
         console.log('🔧 Testing API Client Setup...');
-        
+
         const tests = [
             { name: 'Default timeout', options: {} },
             { name: 'Short timeout', options: { timeout: 5000 } },
@@ -64,10 +58,11 @@ class PerformanceTestSuite {
         for (const test of tests) {
             const startTime = Date.now();
             try {
-                const client = new BileCoreApiClient('test-key', test.options);
+                // Use proper client factory method
+                const client = BileCoreApiClient.create(test.options);
                 const setupTime = Date.now() - startTime;
                 console.log(`   ✅ ${test.name}: ${setupTime}ms`);
-                
+
                 this.results.push({
                     test: 'setup',
                     name: test.name,
@@ -89,27 +84,26 @@ class PerformanceTestSuite {
 
     async testTimeoutBehaviors() {
         console.log('⏱️  Testing Timeout Behaviors...');
-        
+
         const timeoutTests = [1000, 5000, 10000, 30000];
-        
+
         for (const timeout of timeoutTests) {
             console.log(`   Testing ${timeout}ms timeout...`);
-            const client = new BileCoreApiClient('invalid-key', { timeout, debug: false });
-            
+            // Use proper client creation like the main CLI test
+            const client = BileCoreApiClient.create({ timeout, debug: false });
+
             const startTime = Date.now();
             try {
-                await client.translate({
-                    title: 'Test',
-                    content: [{ type: 'paragraph', text: 'Short test content' }]
-                }, 'de');
+                // Use same format as CLI test
+                await client.translate('Short test content', 'de');
             } catch (error) {
                 const actualTime = Date.now() - startTime;
                 const isTimeout = error.message.includes('timed out');
                 const isExpectedTime = Math.abs(actualTime - timeout) < 1000; // Within 1s tolerance
-                
+
                 console.log(`     ${isTimeout ? '⏰' : '❌'} Failed in ${actualTime}ms (expected ~${timeout}ms)`);
                 console.log(`     Error: ${error.message}`);
-                
+
                 this.results.push({
                     test: 'timeout',
                     expectedTimeout: timeout,
@@ -125,7 +119,7 @@ class PerformanceTestSuite {
 
     async testContentSizes() {
         console.log('📏 Testing Content Size Impact...');
-        
+
         const fixtures = [
             { file: 'test/fixtures/article-short.txt', name: 'Short' },
             { file: 'test/fixtures/article-medium.txt', name: 'Medium' },
@@ -135,19 +129,20 @@ class PerformanceTestSuite {
         for (const fixture of fixtures) {
             const content = this.parseContentFile(fixture.file);
             const textLength = content.content.map(c => c.text).join(' ').length;
-            
+
             console.log(`   ${fixture.name}: ${textLength} chars`);
-            
-            // Test with translation engine (chunking logic)
+
+            // Test with proper client (will skip if no API key)
             const startTime = Date.now();
             try {
-                const engine = new BileTranslationEngine('fake-key', { debug: false });
-                await engine.translateContent(content, 'en');
+                const client = BileCoreApiClient.create({ debug: false });
+                const textContent = content.content.map(c => c.text).join(' ');
+                await client.translate(textContent, 'en');
             } catch (error) {
                 const processingTime = Date.now() - startTime;
                 console.log(`     Processing time: ${processingTime}ms`);
                 console.log(`     Error type: ${error.message.includes('timed out') ? 'Timeout' : 'Other'}`);
-                
+
                 this.results.push({
                     test: 'content-size',
                     name: fixture.name,
@@ -162,12 +157,12 @@ class PerformanceTestSuite {
 
     async testRealApiCalls() {
         console.log('🌐 Testing Real API Calls...');
-        
+
         // Use configured client with debug enabled
         const client = BileCoreApiClient.create({ timeout: 60000, debug: true });
         const config = await client.getConfig();
         console.log(`   Using provider: ${config.provider}`);
-        
+
         // Test 1: Connection test
         console.log('   Testing API connection...');
         const startConnect = Date.now();
@@ -175,12 +170,12 @@ class PerformanceTestSuite {
             const canConnect = await client.testConnection();
             const connectTime = Date.now() - startConnect;
             console.log(`   Connection: ${canConnect ? '✅' : '❌'} (${connectTime}ms)`);
-            
+
             if (canConnect) {
                 // Test 2: Small translation
                 await this.testRealTranslation(client, 'test/fixtures/article-short.txt', 'Small');
-                
-                // Test 3: Medium translation  
+
+                // Test 3: Medium translation
                 await this.testRealTranslation(client, 'test/fixtures/article-medium.txt', 'Medium');
             }
         } catch (error) {
@@ -193,14 +188,14 @@ class PerformanceTestSuite {
         console.log(`   Translating ${name} content...`);
         const content = this.parseContentFile(filePath);
         const startTime = Date.now();
-        
+
         try {
             const result = await client.translate(content, 'en');
             const translationTime = Date.now() - startTime;
-            
+
             console.log(`     ✅ Success in ${translationTime}ms`);
             console.log(`     Translated: ${result.content?.length || 0} paragraphs`);
-            
+
             this.results.push({
                 test: 'real-api',
                 name: name,
@@ -211,7 +206,7 @@ class PerformanceTestSuite {
         } catch (error) {
             const failTime = Date.now() - startTime;
             console.log(`     ❌ Failed in ${failTime}ms: ${error.message}`);
-            
+
             this.results.push({
                 test: 'real-api',
                 name: name,
@@ -224,22 +219,22 @@ class PerformanceTestSuite {
 
     async testModelFailover() {
         console.log('🔄 Testing Model Failover Logic...');
-        
+
         const BileModelManager = require('../src/core/model-manager.js');
-        
+
         try {
             const bestModel = BileModelManager.getBestAvailableModel();
             const fallbackModel = BileModelManager.getFallbackModel();
-            
+
             console.log(`   Best model: ${bestModel?.name || 'none'}`);
             console.log(`   Fallback model: ${fallbackModel?.name || 'none'}`);
-            
+
             // Test model switching logic (if available)
             if (BileModelManager.getAllModels) {
                 const allModels = BileModelManager.getAllModels();
                 console.log(`   Available models: ${allModels.length}`);
             }
-            
+
         } catch (error) {
             console.log(`   ❌ Model failover test failed: ${error.message}`);
         }
@@ -247,21 +242,20 @@ class PerformanceTestSuite {
     }
 
     parseContentFile(filePath) {
-        const content = fs.readFileSync(filePath, 'utf8');
+        const content = require('fs').readFileSync(filePath, 'utf8');
         const lines = content.split('\n').filter(line => line.trim());
         const title = lines[0] || 'Untitled';
         const paragraphs = lines.slice(1).map(line => ({
             type: 'paragraph',
             text: line.trim()
         })).filter(p => p.text);
-
         return { title, content: paragraphs };
     }
 
     printSummary() {
         console.log('📊 Performance Test Summary');
         console.log('==========================\n');
-        
+
         // Group results by test type
         const grouped = this.results.reduce((acc, result) => {
             if (!acc[result.test]) acc[result.test] = [];
@@ -280,16 +274,16 @@ class PerformanceTestSuite {
             });
             console.log();
         }
-        
+
         // Identify patterns
         const timeoutResults = grouped.timeout || [];
         const fastFailures = timeoutResults.filter(r => r.actualTime < 1000);
         const realTimeouts = timeoutResults.filter(r => r.isTimeout && r.isExpectedTime);
-        
+
         console.log('🎯 Key Findings:');
         console.log(`- Fast failures (< 1s): ${fastFailures.length}/${timeoutResults.length}`);
         console.log(`- Real timeouts: ${realTimeouts.length}/${timeoutResults.length}`);
-        
+
         if (fastFailures.length > realTimeouts.length) {
             console.log('⚠️  Most failures are NOT timeouts - likely connectivity/auth issues');
         }

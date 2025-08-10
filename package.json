@@ -6,7 +6,8 @@
   "scripts": {
     "build": "node scripts/build-userscript.js",
     "dev": "node scripts/build-userscript.js && scripts/open-userscript.sh",
-    "test": "node scripts/test-cli.js",
+    "test": "node --env-file=.env test/cli.js",
+    "test:performance": "node --env-file=.env test/performance-test.js",
     "clean": "rm -rf dist/"
   },
   "keywords": [
@@ -27,7 +28,6 @@
     "node": ">=16.0.0"
   },
   "devDependencies": {
-    "dotenv": "^17.2.1",
     "jsdom": "^22.1.0"
   },
   "bile": {

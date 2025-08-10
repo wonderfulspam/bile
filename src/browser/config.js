@@ -19,7 +19,7 @@ const BileBrowserConfig = {
             '.article-text',
             '.content-body'
         ],
-        
+
         TITLE_SELECTORS: [
             'h1',
             '.article-title',

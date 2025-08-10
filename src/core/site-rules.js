@@ -274,7 +274,13 @@ const BileSiteRules = {
         const structuredContent = this.structureExtractedContent(contentElement);
 
         // Detect language
-        const language = BileUtils.detectLanguage(contentElement.textContent || '');
+        let BileUtils = null;
+        if (typeof require !== 'undefined') {
+            BileUtils = require('./utils.js');
+        } else if (typeof window !== 'undefined' && window.BileCoreUtils) {
+            BileUtils = window.BileCoreUtils;
+        }
+        const language = BileUtils ? BileUtils.detectLanguage(contentElement.textContent || '') : 'auto';
 
         // Generate metadata
         const metadata = this.generateMetadata(contentElement);
@@ -286,7 +292,8 @@ const BileSiteRules = {
             language,
             content: structuredContent,
             metadata,
-            extractionMethod: 'site-specific'
+            extractionMethod: 'site-specific',
+            confidence: rules.confidence || 0.8
         };
     },
 
@@ -350,6 +357,24 @@ const BileSiteRules = {
      */
     structureExtractedContent(contentElement) {
         const allowedTags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'blockquote', 'img'];
+
+        // Get BileUtils reference
+        let BileUtils = null;
+        if (typeof require !== 'undefined') {
+            BileUtils = require('./utils.js');
+        } else if (typeof window !== 'undefined' && window.BileCoreUtils) {
+            BileUtils = window.BileCoreUtils;
+        }
+
+        if (!BileUtils) {
+            // Fallback: simple text extraction
+            return [{
+                type: 'paragraph',
+                content: contentElement.textContent.trim(),
+                wordCount: contentElement.textContent.split(/\s+/).length
+            }];
+        }
+
         return BileUtils.walkContentElements(contentElement, allowedTags, (node) => {
             return this.createContentElement(node);
         });
@@ -415,8 +440,8 @@ const BileSiteRules = {
         return {
             wordCount,
             readingTime,
-            domain: window.location.hostname,
-            url: window.location.href,
+            domain: (typeof window !== 'undefined') ? window.location.hostname : 'unknown',
+            url: (typeof window !== 'undefined') ? window.location.href : 'unknown',
             extractedAt: new Date()
         };
     },

@@ -23,7 +23,7 @@ const BileStorage = {
             const stored = typeof GM_getValue !== 'undefined'
                 ? GM_getValue(this.KEYS.PROVIDER, null)
                 : localStorage.getItem(this.KEYS.PROVIDER);
-            
+
             return stored || 'groq'; // Default to Groq
         } catch (error) {
             return 'groq';
@@ -58,7 +58,7 @@ const BileStorage = {
 
         try {
             const keyName = provider === 'groq' ? this.KEYS.GROQ_API_KEY : this.KEYS.OPENROUTER_API_KEY;
-            
+
             // Try GM storage first
             if (typeof GM_getValue !== 'undefined') {
                 return GM_getValue(keyName, null);
@@ -81,7 +81,7 @@ const BileStorage = {
     async setApiKey(provider, apiKey) {
         try {
             const keyName = provider === 'groq' ? this.KEYS.GROQ_API_KEY : this.KEYS.OPENROUTER_API_KEY;
-            
+
             if (typeof GM_setValue !== 'undefined') {
                 GM_setValue(keyName, apiKey);
             } else {
@@ -152,10 +152,10 @@ const BileStorage = {
      */
     async getLanguagePreference() {
         try {
-            const stored = typeof GM_getValue !== 'undefined' 
+            const stored = typeof GM_getValue !== 'undefined'
                 ? GM_getValue(this.KEYS.LANGUAGE_PREFERENCE, null)
                 : localStorage.getItem(this.KEYS.LANGUAGE_PREFERENCE);
-            
+
             if (stored) return stored;
 
             // Auto-detect from browser language
@@ -191,7 +191,7 @@ const BileStorage = {
             const settings = typeof GM_getValue !== 'undefined'
                 ? GM_getValue(this.KEYS.SETTINGS, '{}')
                 : localStorage.getItem(this.KEYS.SETTINGS) || '{}';
-            
+
             return JSON.parse(settings);
         } catch (error) {
             return {};
@@ -207,7 +207,7 @@ const BileStorage = {
             const current = await this.getSettings();
             const updated = { ...current, ...newSettings };
             const serialized = JSON.stringify(updated);
-            
+
             if (typeof GM_setValue !== 'undefined') {
                 GM_setValue(this.KEYS.SETTINGS, serialized);
             } else {

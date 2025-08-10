@@ -739,8 +739,6 @@ const BileTabGenerator = {
                 </article>
             </div>
 
-            ${content.content.some(section => section.slang_terms?.length > 0) ?
-                this._generateSlangGlossary(content.content) : ''}
         </main>`;
     },
 
@@ -751,7 +749,7 @@ const BileTabGenerator = {
     _generateContentSections(contentSections, type) {
         return contentSections.map((section, index) => {
             const text = section[type] || '';
-            const highlightedText = this._highlightSlangTerms(text, section.slang_terms || [], `section-${index}`);
+            const highlightedText = this._highlightSlangTerms(text, section.slang_terms || [], `section-${index}`, type);
 
             return `<div class="content-section" data-section="${index}">
                 <p>${highlightedText}</p>
@@ -760,31 +758,90 @@ const BileTabGenerator = {
     },
 
     /**
-     * Highlight slang terms in text
+     * Highlight slang terms in text using prototype-compatible format
      * @private
      */
-    _highlightSlangTerms(text, slangTerms, sectionId) {
+    _highlightSlangTerms(text, slangTerms, sectionId, type = 'original') {
         if (!slangTerms || slangTerms.length === 0) {
             return this._sanitizeHtml(text);
         }
 
         let highlightedText = this._sanitizeHtml(text);
 
-        slangTerms.forEach((termData, termIndex) => {
-            const term = termData.term;
-            const termId = `${sectionId}-term-${termIndex}`;
-            const highlightHtml = `<span class="slang-term" data-term-id="${termId}"
-                onclick="bile.showTermExplanation('${termId}', '${this._escapeForAttribute(term)}',
-                '${this._escapeForAttribute(termData.translation)}',
-                '${this._escapeForAttribute(termData.explanation_original)}',
-                '${this._escapeForAttribute(termData.explanation_translated)}')">${term}</span>`;
+        // Remove any existing <slang> HTML entities from the API response
+        highlightedText = highlightedText.replace(/&lt;slang&gt;|&lt;\/slang&gt;/g, '');
 
-            // Replace first occurrence of the term
-            const regex = new RegExp(`\\b${term}\\b`, 'i');
-            highlightedText = highlightedText.replace(regex, highlightHtml);
+        slangTerms.forEach((termData, termIndex) => {
+            let termToHighlight, explanation;
+
+            if (type === 'original') {
+                // Original content: use the original term and original explanation
+                termToHighlight = termData.term;
+                explanation = termData.explanation_original || termData.explanation_translated || '';
+            } else {
+                // Translated content: try to find the best term to highlight and create explanation with original term
+                termToHighlight = this._findTranslatedTerm(highlightedText, termData);
+                const baseExplanation = termData.explanation_translated || termData.explanation_original || '';
+                explanation = `${baseExplanation} (${termData.term})`;
+            }
+
+            if (!termToHighlight) return; // Skip if we couldn't find a term to highlight
+
+            // Find the actual inflected form that appears in the text (handle any language inflections)
+            const regex = new RegExp(`\\b(${this._escapeRegex(termToHighlight)}[a-zA-Z]{0,4})\\b`, 'i');
+            const match = highlightedText.match(regex);
+
+            if (match) {
+                const actualTermInText = match[1]; // The inflected form found in text
+                const highlightHtml = `<span class="slang" onclick="toggleTooltip(this)">${actualTermInText}<span class="tooltip">${this._sanitizeHtml(explanation)}</span></span>`;
+                highlightedText = highlightedText.replace(regex, highlightHtml);
+            }
         });
 
         return highlightedText;
+    },
+
+    /**
+     * Find the best term to highlight in translated text
+     * @private
+     */
+    _findTranslatedTerm(translatedText, termData) {
+        const candidates = [
+            termData.translation,  // "weaker individuals"
+            termData.term         // "Cringe" (if it appears unchanged)
+        ].filter(Boolean);
+
+        // Try each candidate to see which one exists in the text (with inflections)
+        for (const candidate of candidates) {
+            const regex = new RegExp(`\\b(${this._escapeRegex(candidate)}[a-zA-Z]{0,4})\\b`, 'i');
+            const match = translatedText.match(regex);
+            if (match) {
+                return match[1]; // Return the inflected form found in text
+            }
+        }
+
+        // If translation field has multiple words, try finding partial matches
+        if (termData.translation && termData.translation.includes(' ')) {
+            const words = termData.translation.split(' ');
+            for (const word of words) {
+                if (word.length > 3) { // Only try longer words to avoid false matches
+                    const regex = new RegExp(`\\b(${this._escapeRegex(word)}[a-zA-Z]{0,4})\\b`, 'i');
+                    const match = translatedText.match(regex);
+                    if (match) {
+                        return match[1]; // Return the inflected form found in text
+                    }
+                }
+            }
+        }
+
+        // Fallback: try the original term in case it wasn't translated (handle inflections)
+        const originalRegex = new RegExp(`\\b(${this._escapeRegex(termData.term)}[a-zA-Z]{0,4})\\b`, 'i');
+        const originalMatch = translatedText.match(originalRegex);
+        if (originalMatch) {
+            return originalMatch[1]; // Return the inflected form found in text
+        }
+
+        return null; // Couldn't find anything to highlight
     },
 
     /**
@@ -1016,7 +1073,7 @@ const BileTabGenerator = {
             margin-bottom: 1.5rem;
         }
 
-        .slang-term {
+        .slang {
             background: linear-gradient(120deg, #a8edea 0%, #fed6e3 100%);
             padding: 0.1em 0.3em;
             border-radius: 3px;
@@ -1024,11 +1081,35 @@ const BileTabGenerator = {
             font-weight: 600;
             transition: all 0.3s ease;
             border-bottom: 2px solid transparent;
+            position: relative;
         }
 
-        .slang-term:hover {
+        .slang:hover {
             border-bottom-color: #667eea;
             transform: scale(1.05);
+        }
+
+        .tooltip {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: normal;
+            max-width: 250px;
+            white-space: normal;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            margin-bottom: 5px;
+        }
+
+        .tooltip.visible {
+            display: block;
         }
 
         .slang-glossary {
@@ -1272,6 +1353,31 @@ const BileTabGenerator = {
                 alert('Keyboard Shortcuts:\\n\\nSpace - Toggle languages\\nEsc - Close modal\\n\\nMore shortcuts coming in future versions!');
             }
         };
+
+        // Tooltip functionality for slang terms (prototype-compatible)
+        window.toggleTooltip = function(element) {
+            const tooltip = element.querySelector('.tooltip');
+            if (!tooltip) return;
+
+            // Hide all other tooltips
+            document.querySelectorAll('.tooltip.visible').forEach(t => {
+                if (t !== tooltip) {
+                    t.classList.remove('visible');
+                }
+            });
+
+            // Toggle this tooltip
+            tooltip.classList.toggle('visible');
+        };
+
+        // Close tooltips when clicking elsewhere
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.slang')) {
+                document.querySelectorAll('.tooltip.visible').forEach(tooltip => {
+                    tooltip.classList.remove('visible');
+                });
+            }
+        });
 
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
@@ -1527,6 +1633,11 @@ const BileTabGenerator = {
             .replace(/"/g, '&quot;')
             .replace(/\n/g, ' ')
             .replace(/\r/g, '');
+    },
+
+    _escapeRegex(text) {
+        if (!text) return '';
+        return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     },
 
     _getLanguageFlag(langCode) {

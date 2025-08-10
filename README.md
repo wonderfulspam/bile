@@ -8,7 +8,7 @@ Bile helps language learners bridge the gap between textbook knowledge and real-
 
 - Converting web articles into clean, bilingual formats
 - Automatically detecting source languages
-- Preserving slang, idioms, and culturally significant terms with explanations  
+- Preserving slang, idioms, and culturally significant terms with explanations
 - Creating clickable tooltips for cultural and linguistic context
 - Providing instant language toggle functionality
 - Removing ads, popups, and distractions for focused learning
@@ -21,16 +21,16 @@ Bile helps language learners bridge the gap between textbook knowledge and real-
 - Works on major news sites (BBC, TAZ, Spiegel, etc.)
 - Click button → get bilingual article in new tab
 
-**⚡ CLI Tool** - Development and testing  
+**⚡ CLI Tool** - Development and testing
 
 - Fast iteration cycle (<10 seconds vs 5+ minutes)
-- Direct API testing without browser simulation  
+- Direct API testing without browser simulation
 - Content analysis and translation testing
 
 ## Project Status
 
-✅ **Phase 1-3 Completed** - Working browser userscript with OpenRouter API integration  
-✅ **CLI Ready** - Development environment with clean core/browser separation  
+✅ **Phase 1-3 Completed** - Working browser userscript with OpenRouter API integration
+✅ **CLI Ready** - Development environment with clean core/browser separation
 📋 **Active Development** - See [ai/plans/STATUS.md](ai/plans/STATUS.md) for current state
 
 ## File Structure
@@ -54,9 +54,8 @@ bile/
 │   │   ├── tab-generator.js    # HTML generation for new tabs
 │   │   ├── ui-trigger.js       # Button & modal UI components
 │   │   ├── site-rules.js       # Site-specific DOM selectors
-│   │   └── userscript-header.js # Tampermonkey metadata
-│   ├── cli.js                  # CLI entry point
-│   └── test-runner.html        # Browser testing interface
+│   │   ├── userscript-header.js # Tampermonkey metadata
+│   └── cli.js                  # CLI entry point
 ├── scripts/
 │   ├── build-userscript.js     # Build system (generates dist/bile.user.js)
 │   └── test-cli.js             # CLI test suite
