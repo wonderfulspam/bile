@@ -100,7 +100,7 @@ const BileContentExtractor = {
                 title: this.extractTitle(document),
                 author: this.extractAuthor(document),
                 publishDate: this.extractPublishDate(document),
-                language: this.detectLanguage(cleanedContent),
+                language: BileUtils.detectLanguage(cleanedContent),
                 content: structuredContent,
                 metadata: this.extractMetadata(document, cleanedContent),
                 confidence: this.calculateConfidence(structuredContent)
@@ -251,28 +251,10 @@ const BileContentExtractor = {
      * Structure content into semantic elements
      */
     structureContent(element) {
-        const content = [];
-        const walker = document.createTreeWalker(
-            element,
-            NodeFilter.SHOW_ELEMENT,
-            {
-                acceptNode: (node) => {
-                    const tagName = node.tagName.toLowerCase();
-                    if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'blockquote'].includes(tagName)) {
-                        return NodeFilter.FILTER_ACCEPT;
-                    }
-                    return NodeFilter.FILTER_SKIP;
-                }
-            }
-        );
-
-        let node;
-        while (node = walker.nextNode()) {
-            const element = this.createContentElement(node);
-            if (element) {
-                content.push(element);
-            }
-        }
+        const allowedTags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'blockquote'];
+        const content = BileUtils.walkContentElements(element, allowedTags, (node) => {
+            return this.createContentElement(node);
+        });
 
         // Remove duplicate content (like repeated titles)
         return this.deduplicateContent(content);
@@ -454,34 +436,6 @@ const BileContentExtractor = {
     },
 
     /**
-     * Basic language detection
-     */
-    detectLanguage(element) {
-        const text = element.textContent || '';
-
-        // Simple heuristics for common languages
-        const patterns = {
-            'en': /\b(the|and|or|but|in|on|at|to|for|of|with|by)\b/gi,
-            'de': /\b(der|die|das|und|oder|aber|in|auf|an|zu|für|von|mit|bei|ist|sind)\b/gi,
-            'fr': /\b(le|la|les|et|ou|mais|dans|sur|à|pour|de|avec|par|est|sont)\b/gi,
-            'es': /\b(el|la|los|las|y|o|pero|en|sobre|a|para|de|con|por|es|son)\b/gi
-        };
-
-        let maxMatches = 0;
-        let detectedLang = 'en';
-
-        Object.entries(patterns).forEach(([lang, pattern]) => {
-            const matches = (text.match(pattern) || []).length;
-            if (matches > maxMatches) {
-                maxMatches = matches;
-                detectedLang = lang;
-            }
-        });
-
-        return detectedLang;
-    },
-
-    /**
      * Extract metadata
      */
     extractMetadata(document, content) {
@@ -548,7 +502,7 @@ const BileContentExtractor = {
                 title,
                 author: null,
                 publishDate: null,
-                language: this.detectLanguage(document.body),
+                language: BileUtils.detectLanguage(document.body.textContent || ''),
                 content,
                 metadata: {
                     wordCount: content.reduce((total, p) => total + p.text.split(/\s+/).length, 0),

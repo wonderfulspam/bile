@@ -26,42 +26,20 @@ const BileUtils = {
         'hi': { name: 'हिन्दी', flag: '🇮🇳', rtl: false }
     },
 
-    // UI Selectors for common article elements
-    UI_SELECTORS: {
-        ARTICLE_CONTAINERS: [
-            'article',
-            '[role="article"]',
-            '.article-content',
-            '.article-body',
-            '.post-content',
-            '.entry-content',
-            '.content',
-            'main',
-            '.story-body',
-            '.article-text'
-        ],
-
-        TITLE_SELECTORS: [
-            'h1',
-            '.article-title',
-            '.entry-title',
-            '.post-title',
-            '.headline',
-            'title'
-        ],
-
-        IGNORE_SELECTORS: [
-            'nav',
-            'header:not(article header)',
-            'footer:not(article footer)',
-            '.sidebar',
-            '.advertisement',
-            '.ad',
-            '.social-share',
-            '.comments',
-            '.related-articles',
-            '.newsletter-signup'
-        ]
+    // UI Selectors for common article elements (use shared constants)
+    get UI_SELECTORS() {
+        if (typeof window !== 'undefined' && window.BileConstants) {
+            return window.BileConstants.UI_SELECTORS;
+        } else if (typeof require !== 'undefined') {
+            const constants = require('../config/constants.js');
+            return constants.UI_SELECTORS;
+        }
+        // Fallback if constants are not available
+        return {
+            ARTICLE_CONTAINERS: ['article', '.article-content', '.post-content'],
+            TITLE_SELECTORS: ['h1', '.article-title'],
+            PARAGRAPH_SELECTORS: ['p']
+        };
     },
 
     // Configuration constants
@@ -172,6 +150,35 @@ const BileUtils = {
     },
 
     /**
+     * Detect language from text content using common word patterns
+     * @param {string} text - Text to analyze
+     * @returns {string} Detected language code
+     */
+    detectLanguage(text) {
+        if (!text || typeof text !== 'string') return 'en';
+
+        const patterns = {
+            'en': /\b(the|and|or|but|in|on|at|to|for|of|with|by|is|are|was|were|a|an)\b/gi,
+            'de': /\b(der|die|das|und|oder|aber|in|auf|an|zu|für|von|mit|bei|ist|sind)\b/gi,
+            'fr': /\b(le|la|les|et|ou|mais|dans|sur|à|pour|de|avec|par|est|sont)\b/gi,
+            'es': /\b(el|la|los|las|y|o|pero|en|sobre|a|para|de|con|por|es|son)\b/gi
+        };
+
+        let maxMatches = 0;
+        let detectedLang = 'en';
+
+        Object.entries(patterns).forEach(([lang, pattern]) => {
+            const matches = (text.match(pattern) || []).length;
+            if (matches > maxMatches) {
+                maxMatches = matches;
+                detectedLang = lang;
+            }
+        });
+
+        return detectedLang;
+    },
+
+    /**
      * Detect if device is mobile
      * @returns {boolean} True if mobile device
      */
@@ -188,6 +195,65 @@ const BileUtils = {
             width: Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0),
             height: Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)
         };
+    },
+
+    /**
+     * Create DOM walker for content elements
+     * @param {Element} container - Container element to walk
+     * @param {Array} allowedTags - Array of allowed tag names (lowercase)
+     * @param {Function} elementProcessor - Function to process each found element
+     * @returns {Array} Array of processed elements
+     */
+    walkContentElements(container, allowedTags, elementProcessor) {
+        const content = [];
+        const walker = document.createTreeWalker(
+            container,
+            NodeFilter.SHOW_ELEMENT,
+            {
+                acceptNode: (node) => {
+                    const tagName = node.tagName.toLowerCase();
+                    if (allowedTags.includes(tagName)) {
+                        return NodeFilter.FILTER_ACCEPT;
+                    }
+                    return NodeFilter.FILTER_SKIP;
+                }
+            }
+        );
+
+        let node;
+        while (node = walker.nextNode()) {
+            const element = elementProcessor(node);
+            if (element) {
+                content.push(element);
+            }
+        }
+
+        return content;
+    },
+
+    /**
+     * Create common modal overlay styles
+     * @param {Object} options - Style customization options  
+     * @returns {string} CSS text for modal overlay
+     */
+    getModalOverlayStyles(options = {}) {
+        const {
+            background = 'rgba(0, 0, 0, 0.5)',
+            zIndex = '2147483647'
+        } = options;
+        
+        return `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: ${background};
+            z-index: ${zIndex};
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
     },
 
     /**

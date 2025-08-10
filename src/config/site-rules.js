@@ -274,7 +274,7 @@ const BileSiteRules = {
         const structuredContent = this.structureExtractedContent(contentElement);
 
         // Detect language
-        const language = this.detectLanguageFromContent(contentElement);
+        const language = BileUtils.detectLanguage(contentElement.textContent || '');
 
         // Generate metadata
         const metadata = this.generateMetadata(contentElement);
@@ -349,30 +349,10 @@ const BileSiteRules = {
      * Structure extracted content into semantic elements
      */
     structureExtractedContent(contentElement) {
-        const content = [];
-        const walker = document.createTreeWalker(
-            contentElement,
-            NodeFilter.SHOW_ELEMENT,
-            {
-                acceptNode: (node) => {
-                    const tagName = node.tagName.toLowerCase();
-                    if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'blockquote', 'img'].includes(tagName)) {
-                        return NodeFilter.FILTER_ACCEPT;
-                    }
-                    return NodeFilter.FILTER_SKIP;
-                }
-            }
-        );
-
-        let node;
-        while (node = walker.nextNode()) {
-            const element = this.createContentElement(node);
-            if (element) {
-                content.push(element);
-            }
-        }
-
-        return content;
+        const allowedTags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'blockquote', 'img'];
+        return BileUtils.walkContentElements(contentElement, allowedTags, (node) => {
+            return this.createContentElement(node);
+        });
     },
 
     /**
@@ -422,34 +402,6 @@ const BileSiteRules = {
         }
 
         return element;
-    },
-
-    /**
-     * Detect language from extracted content
-     */
-    detectLanguageFromContent(contentElement) {
-        const text = contentElement.textContent || '';
-
-        // Simple language detection patterns
-        const patterns = {
-            'en': /\b(the|and|or|but|in|on|at|to|for|of|with|by)\b/gi,
-            'de': /\b(der|die|das|und|oder|aber|in|auf|an|zu|für|von|mit|bei)\b/gi,
-            'fr': /\b(le|la|les|et|ou|mais|dans|sur|à|pour|de|avec|par)\b/gi,
-            'es': /\b(el|la|los|las|y|o|pero|en|sobre|a|para|de|con|por)\b/gi
-        };
-
-        let maxMatches = 0;
-        let detectedLang = 'en';
-
-        Object.entries(patterns).forEach(([lang, pattern]) => {
-            const matches = (text.match(pattern) || []).length;
-            if (matches > maxMatches) {
-                maxMatches = matches;
-                detectedLang = lang;
-            }
-        });
-
-        return detectedLang;
     },
 
     /**

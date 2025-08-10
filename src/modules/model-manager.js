@@ -35,32 +35,15 @@ const BileModelManager = {
      * @returns {string} Selected model ID
      */
     selectOptimalModel(criteria = {}) {
-        const {
-            sourceLanguage = 'en',
-            targetLanguage = 'en',
-            contentType = 'blog',
-            contentLength = 1000,
-            excludeModels = []
-        } = criteria;
-
-        // Combine excluded models with failed models
-        const allExcluded = [...excludeModels, ...this.failoverState.excludedModels];
-
-        // Get base recommendation from config
-        const configRecommendation = BileModelConfig.getOptimalModel({
-            sourceLanguage,
-            targetLanguage,
-            contentType,
-            contentLength,
-            excludeModels: allExcluded
-        });
-
-        // Apply performance-based adjustments
-        return this._adjustForPerformance(configRecommendation, {
-            sourceLanguage,
-            targetLanguage,
-            contentType,
-            excludeModels: allExcluded
+        // Delegate to model config with our failure tracking
+        const excludeWithFailures = [
+            ...(criteria.excludeModels || []),
+            ...this.failedModels
+        ];
+        
+        return BileModelConfig.getOptimalModel({
+            ...criteria,
+            excludeModels: excludeWithFailures
         });
     },
 

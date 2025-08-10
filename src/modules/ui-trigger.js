@@ -287,24 +287,16 @@ Enter your OpenRouter API key:`);
         // Try to find main article content
         let mainContent = '';
 
-        // Look for common article containers - updated with more specific selectors
-        const articleSelectors = [
-            'article',
-            '[role="article"]',
-            '.article-content',
-            '.article-body',
-            '.post-content',
-            '.entry-content',
-            '.content-body',
-            '.text-content',
-            '.article-text',
-            '.story-body',
-            '.main-content',
-            '.content',
-            'main',
-            '#content',
-            '.page-content'
-        ];
+        // Look for common article containers - use shared selectors
+        const BileConstants = window.BileConstants;
+        const articleSelectors = BileConstants ? 
+            BileConstants.UI_SELECTORS.ARTICLE_CONTAINERS : 
+            [
+                'article', '[role="article"]', '.article-content', '.article-body',
+                '.post-content', '.entry-content', '.content-body',
+                '.text-content', '.article-text', '.story-body', '.main-content',
+                '.content', 'main', '#content', '.page-content'
+            ];
 
         let articleElement = null;
         for (const selector of articleSelectors) {
@@ -374,17 +366,10 @@ Enter your OpenRouter API key:`);
     _createPreviewModal(content, resolve) {
         const modal = document.createElement('div');
         modal.id = 'bile-preview-modal';
-        modal.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 2147483648;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        modal.style.cssText = BileUtils.getModalOverlayStyles({
+            background: 'rgba(0, 0, 0, 0.6)',
+            zIndex: '2147483648'
+        }) + `
             backdrop-filter: blur(4px);
         `;
 
@@ -812,17 +797,10 @@ Enter your OpenRouter API key:`);
 
         const modal = document.createElement('div');
         modal.id = 'bile-processing-modal';
-        modal.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 2147483649;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        modal.style.cssText = BileUtils.getModalOverlayStyles({
+            background: 'rgba(0, 0, 0, 0.6)',
+            zIndex: '2147483649'
+        }) + `
             backdrop-filter: blur(4px);
         `;
 

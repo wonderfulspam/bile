@@ -7,6 +7,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const BileConstants = require('../src/config/constants.js');
 
 const BUILD_CONFIG = {
     // Source directory
@@ -18,12 +19,15 @@ const BUILD_CONFIG = {
     // Modules to include (in dependency order)
     modules: [
         'config/userscript-header.js',
+        'config/constants.js', // Include shared constants first
         'modules/utils.js',
-        'modules/storage.js',
+        // Browser modules for userscript functionality
+        'browser/storage.js',
         'config/model-config.js',
         'modules/model-manager.js',
-        'modules/api-client.js',
-        'modules/translation-engine.js',
+        // Core modules with consolidated logic
+        'core/api-client.js',
+        'core/translation-engine.js',
         'modules/content-analyzer.js', 
         'config/site-rules.js',
         'modules/content-extractor.js',
@@ -113,13 +117,22 @@ class UserscriptBuilder {
         content = content.replace(/^import .*$/gm, '');
         content = content.replace(/^export .*$/gm, '');
         
-        // Remove Node.js module.exports blocks completely
-        content = content.replace(/if \(typeof module !== 'undefined' && module\.exports\) \{[\s\S]*?\}(\s*else if \(typeof window !== 'undefined'\) \{[\s\S]*?\})?/g, '');
-        
-        // Clean up any remaining standalone else if blocks (including those after semicolons)
-        content = content.replace(/;\s*\n\s*\} else if \(typeof window !== 'undefined'\) \{[\s\S]*?\}/g, ';');
-        content = content.replace(/^\s*\} else if \(typeof window !== 'undefined'\) \{[\s\S]*?\}/gm, '');
-        content = content.replace(/^\s*else if \(typeof window !== 'undefined'\) \{[\s\S]*?\}/gm, '');
+        // For core modules and browser wrappers, handle dual-environment exports
+        if (modulePath.startsWith('core/') || modulePath.startsWith('browser/')) {
+            // Remove Node.js exports but keep browser window assignments
+            content = content.replace(/if \(typeof module !== 'undefined' && module\.exports\) \{[\s\S]*?\} else /g, '');
+            content = content.replace(/if \(typeof module !== 'undefined' && module\.exports\) \{[\s\S]*?\}/g, '');
+            // Fix any standalone conditions
+            content = content.replace(/\/\/ Export for both Node\.js and browser environments if \(typeof window !== 'undefined'\) \{/g, '// Export for browser\nif (typeof window !== \'undefined\') {');
+        } else {
+            // Legacy handling for old modules
+            content = content.replace(/if \(typeof module !== 'undefined' && module\.exports\) \{[\s\S]*?\}(\s*else if \(typeof window !== 'undefined'\) \{[\s\S]*?\})?/g, '');
+            
+            // Clean up any remaining standalone else if blocks
+            content = content.replace(/;\s*\n\s*\} else if \(typeof window !== 'undefined'\) \{[\s\S]*?\}/g, ';');
+            content = content.replace(/^\s*\} else if \(typeof window !== 'undefined'\) \{[\s\S]*?\}/gm, '');
+            content = content.replace(/^\s*else if \(typeof window !== 'undefined'\) \{[\s\S]*?\}/gm, '');
+        }
         
         // For the main bile.user.js file, extract only the core logic
         if (modulePath === 'bile.user.js') {
@@ -175,6 +188,42 @@ if (document.readyState === 'loading') {
 
 function initializeBile() {
     try {
+        // Create compatibility layer for new class-based modules
+        if (typeof BileCoreApiClient !== 'undefined' && typeof BileStorage !== 'undefined') {
+            // Create a global instance for backward compatibility
+            window.BileApiClient = {
+                async testApiConnection() {
+                    try {
+                        const apiKey = await BileStorage.getApiKey();
+                        const client = new BileCoreApiClient(apiKey);
+                        return await client.testConnection();
+                    } catch (error) {
+                        console.error('API connection test failed:', error);
+                        return false;
+                    }
+                },
+                
+                async translateContent(content, targetLang, options = {}) {
+                    const apiKey = await BileStorage.getApiKey();
+                    const engine = new BileTranslationEngine(apiKey, options);
+                    return await engine.translateContent(content, targetLang, options);
+                },
+                
+                handleApiError(error) {
+                    console.error('Bile API Error:', error);
+                    return error.message || 'Translation failed';
+                },
+                
+                _detectLanguage(content) {
+                    // Fallback language detection
+                    if (typeof BileContentAnalyzer !== 'undefined' && BileContentAnalyzer.detectLanguageAdvanced) {
+                        return BileContentAnalyzer.detectLanguageAdvanced(content);
+                    }
+                    return 'en'; // Fallback
+                }
+            };
+        }
+
         // Initialize model manager
         if (typeof BileModelManager !== 'undefined') {
             BileModelManager.initialize().catch(console.warn);
@@ -207,8 +256,7 @@ function initializeBile() {
  * Built: ${timestamp}
  * Version: ${this.version}
  * 
- * This file is automatically generated. Do not edit directly.
- * Source files are in the src/ directory.
+${BileConstants.GENERATED_FILE_HEADER.trim()}
  */
 
 `;
