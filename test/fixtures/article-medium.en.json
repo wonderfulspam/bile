@@ -1,0 +1,66 @@
+{
+  "source_language": "de",
+  "target_language": "en",
+  "title_original": "Deutsche Tech-News: KI-Revolution geht weiter",
+  "title_translated": "German Tech-News: AI Revolution Continues",
+  "content": [
+    {
+      "type": "paragraph",
+      "original": "Künstliche Intelligenz verändert weiterhin die deutsche Technologielandschaft mit neuen Entwicklungen im maschinellen Lernen und der Automatisierung. Unternehmen in München und Berlin führen mit innovativen Lösungen an.",
+      "translated": "Artificial intelligence continues to transform the German <slang>Technologielandschaft</slang> with new developments in machine learning and automation. Companies in Munich and Berlin are leading with innovative solutions.",
+      "slang_terms": [
+        {
+          "term": "Technologielandschaft",
+          "translation": "technology landscape",
+          "explanation": "German compound noun combining 'Technologie' (technology) and 'Landschaft' (landscape), commonly used in business contexts to describe the overall tech ecosystem"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "original": "Die Integration von KI in traditionelle Industrien hat sich dieses Jahr deutlich beschleunigt. Automobilriesen wie BMW und Mercedes implementieren fortschrittliche Fahrerassistenzsysteme, die von neuronalen Netzwerken angetrieben werden.",
+      "translated": "The integration of AI into traditional industries has accelerated significantly this year. <slang>Automobilriesen</slang> like BMW and Mercedes are implementing advanced driver assistance systems powered by neural networks.",
+      "slang_terms": [
+        {
+          "term": "Automobilriesen",
+          "translation": "automotive giants",
+          "explanation": "Compound noun combining 'Automobil' (automobile) and 'Riesen' (giants), referring to major car manufacturers"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "original": "Währenddessen fördern Startup-Ökosysteme in Hamburg und Frankfurt neue Unternehmen, die sich auf nachhaltige Technologie und grüne Energielösungen konzentrieren. Diese Firmen ziehen erhebliche Risikokapitalinvestitionen an.",
+      "translated": "Meanwhile, <slang>Startup-Ökosysteme</slang> in Hamburg and Frankfurt are fostering new companies focused on sustainable technology and green energy solutions. These firms are attracting significant venture capital investments.",
+      "slang_terms": [
+        {
+          "term": "Startup-Ökosysteme",
+          "translation": "startup ecosystems",
+          "explanation": "German business term adopted from English, referring to the network of startups, investors, mentors, and support organizations in a region"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "original": "Kritiker argumentieren, dass der rasche technologische Fortschritt traditionelle Arbeitsplätze verdrängen könnte, während Befürworter die Schaffung neuer Möglichkeiten in aufkommenden Bereichen hervorheben.",
+      "translated": "Critics argue that rapid technological progress could displace traditional jobs, while proponents highlight the creation of new opportunities in emerging sectors.",
+      "slang_terms": []
+    },
+    {
+      "type": "paragraph",
+      "original": "Die deutsche Regierung hat Pläne angekündigt, in den nächsten fünf Jahren 2 Milliarden Euro in KI-Forschung und -Entwicklung zu investieren und das Land als Marktführer bei europäischen Technologieinnovationen zu positionieren.",
+      "translated": "The German government has announced plans to invest 2 billion euros in AI research and development over the next five years and to position the country as a market leader in European technology innovations.",
+      "slang_terms": []
+    }
+  ],
+  "metadata": {
+    "usage": {
+      "prompt_tokens": 604,
+      "completion_tokens": 886,
+      "total_tokens": 1490,
+      "prompt_tokens_details": null
+    },
+    "originalLength": 1336,
+    "translatedAt": "2025-08-10T15:21:52.101Z"
+  }
+}

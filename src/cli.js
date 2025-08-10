@@ -5,6 +5,13 @@
  * Uses only core modules (no browser dependencies)
  */
 
+// Load environment variables from .env file
+try {
+    require('dotenv').config();
+} catch (error) {
+    // dotenv not available, continue with system env vars
+}
+
 const fs = require('fs');
 const path = require('path');
 
@@ -42,7 +49,7 @@ class CliStorage {
     }
 
     async getApiKey() {
-        return this.config.apiKey || process.env.BILE_API_KEY || null;
+        return this.config.apiKey || process.env.OPENROUTER_API_KEY || null;
     }
 
     async setApiKey(key) {
@@ -87,6 +94,9 @@ class BileCli {
             case 'models':
                 await this.modelsCommand();
                 break;
+            case 'provider':
+                await this.providerCommand(args.slice(1));
+                break;
             case 'help':
             case '--help':
             case '-h':
@@ -109,14 +119,18 @@ Usage:
   bile analyze <file>          # Analyze content structure
   bile config <key> [value]    # Get/set configuration
   bile models                  # List available models
+  bile provider [name]         # Show/set API provider
   bile help                    # Show this help
 
 Configuration:
-  bile config apiKey <key>     # Set OpenRouter API key
   bile config language <lang>  # Set target language (en, de, es, fr, etc.)
+  bile provider openrouter     # Use OpenRouter  
+  bile provider groq           # Use Groq (faster)
 
 Environment Variables:
-  BILE_API_KEY                 # OpenRouter API key
+  OPENROUTER_API_KEY          # OpenRouter API key
+  GROQ_API_KEY                # Groq API key  
+  BILE_API_PROVIDER           # Provider selection (openrouter, groq)
 
 Examples:
   bile config apiKey sk-or-...
@@ -165,11 +179,11 @@ Examples:
             // Read and parse content
             const content = this.parseContentFile(filePath);
             
-            // Create translation engine
-            const engine = new BileTranslationEngine(apiKey);
+            // Create unified client
+            const client = BileCoreApiClient.create({ debug: true });
             
             // Translate content
-            const result = await engine.translateContent(content, targetLang);
+            const result = await client.translate(content, targetLang);
             
             // Output result
             const outputFile = filePath.replace(/\.(txt|json)$/, `.${targetLang}.json`);
@@ -321,6 +335,83 @@ Examples:
             }
         } catch (error) {
             console.error('❌ Failed to list models:', error.message);
+        }
+    }
+
+    /**
+     * Handle provider commands
+     */
+    async providerCommand(args) {
+        if (args.length === 0) {
+            // Show current provider status
+            console.log('🔌 API Provider Status:');
+            
+            const currentProvider = process.env.BILE_API_PROVIDER || 'groq';
+            console.log(`Current provider: ${currentProvider}`);
+            
+            // Test connections
+            const providers = ['openrouter', 'groq'];
+            for (const provider of providers) {
+                try {
+                    const client = BileCoreApiClient.create({ 
+                        provider, 
+                        debug: false 
+                    });
+                    
+                    const config = await client.getConfig();
+                    const hasKey = config.hasApiKey;
+                    const status = hasKey ? '✅ Ready' : '❌ No API key';
+                    
+                    console.log(`- ${provider}: ${status}`);
+                    
+                    if (hasKey && provider === currentProvider) {
+                        console.log(`  Testing connection...`);
+                        const connected = await client.testConnection();
+                        console.log(`  Connection: ${connected ? '✅ OK' : '❌ Failed'}`);
+                    }
+                } catch (error) {
+                    console.log(`- ${provider}: ❌ Error - ${error.message}`);
+                }
+            }
+            return;
+        }
+
+        const provider = args[0].toLowerCase();
+        const validProviders = ['openrouter', 'groq'];
+        
+        if (!validProviders.includes(provider)) {
+            console.error(`❌ Invalid provider: ${provider}`);
+            console.log(`Valid providers: ${validProviders.join(', ')}`);
+            return;
+        }
+
+        // Test the provider before switching
+        try {
+            console.log(`🔍 Testing ${provider} connection...`);
+            const client = UnifiedApiClient.create({ 
+                provider, 
+                debug: false 
+            });
+            
+            const config = client.getConfig();
+            if (!config.hasApiKey) {
+                const keyVar = provider === 'groq' ? 'GROQ_API_KEY' : 'OPENROUTER_API_KEY';
+                console.error(`❌ ${keyVar} not found in environment`);
+                return;
+            }
+            
+            const connected = await client.testConnection();
+            if (!connected) {
+                console.error(`❌ Failed to connect to ${provider}`);
+                return;
+            }
+            
+            console.log(`✅ ${provider} connection successful`);
+            console.log(`💡 To make this permanent, add to .env file:`);
+            console.log(`   BILE_API_PROVIDER=${provider}`);
+            
+        } catch (error) {
+            console.error(`❌ Provider test failed: ${error.message}`);
         }
     }
 

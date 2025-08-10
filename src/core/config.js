@@ -4,21 +4,68 @@
  */
 
 const BileCoreConfig = {
-    // OpenRouter free models
+    // Provider Configuration
+    PROVIDERS: {
+        OPENROUTER: {
+            name: 'OpenRouter',
+            baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
+            keyEnvVar: 'OPENROUTER_API_KEY',
+            keyPrefix: 'sk-or-',
+            models: [
+                'qwen/qwen3-235b-a22b:free',        // 9.6s - fastest
+                'microsoft/mai-ds-r1:free',         // 10.9s
+                'moonshotai/kimi-k2:free',          // 12.3s
+                'tngtech/deepseek-r1t2-chimera:free', // 15.2s
+                'deepseek/deepseek-r1-0528:free'    // 32.7s - avoid (very slow)
+            ]
+        },
+        GROQ: {
+            name: 'Groq',
+            baseUrl: 'https://api.groq.com/openai/v1/chat/completions',
+            keyEnvVar: 'GROQ_API_KEY',
+            keyPrefix: 'gsk_',
+            models: [
+                'openai/gpt-oss-20b',    // Recommended for high quality
+                'mixtral-8x7b-32768',    // Best quality, good speed
+                'llama2-70b-4096',       // Excellent quality, very fast
+                'llama3-70b-8192',       // Latest Llama, good balance
+                'gemma-7b-it'            // Fallback, fastest
+            ]
+        }
+    },
+
+    // OpenRouter free models (ordered by performance: fastest first) - backward compatibility
     FREE_MODELS: [
-        'moonshotai/kimi-k2:free',
-        'deepseek/deepseek-r1-0528:free', 
-        'tngtech/deepseek-r1t2-chimera:free',
-        'qwen/qwen3-235b-a22b:free',
-        'microsoft/mai-ds-r1:free'
+        'qwen/qwen3-235b-a22b:free',        // 9.6s - fastest
+        'microsoft/mai-ds-r1:free',         // 10.9s
+        'moonshotai/kimi-k2:free',          // 12.3s
+        'tngtech/deepseek-r1t2-chimera:free', // 15.2s
+        'deepseek/deepseek-r1-0528:free'    // 32.7s - avoid (very slow)
     ],
 
-    // API Configuration
+    // API Configuration - backward compatibility
     API: {
         BASE_URL: 'https://openrouter.ai/api/v1/chat/completions',
         MAX_TOKENS: 4000,
         DEFAULT_TEMPERATURE: 0.3,
         TIMEOUT: 30000
+    },
+
+    // Performance optimization settings
+    OPTIMIZATION: {
+        // Use optimized minimal prompts for 50%+ speed improvement
+        USE_MINIMAL_PROMPTS: true,
+        
+        // Preferred model (fastest based on benchmarks)
+        PREFERRED_MODEL: 'qwen/qwen3-235b-a22b:free',
+        
+        // Strategy selection based on content
+        STRATEGIES: {
+            'minimal': 'Ultra-fast, 56% speed improvement, good quality',
+            'balanced': 'Good speed/quality balance, 40% improvement', 
+            'twopass': 'Best for content with few slang terms, 41% improvement',
+            'full': 'Maximum quality, slowest (baseline)'
+        }
     },
 
     // Supported languages with metadata
@@ -63,7 +110,8 @@ const BileCoreConfig = {
         {
           "term": "example",
           "translation": "example translation",
-          "explanation": "Brief explanation for learners"
+          "explanation_original": "Brief explanation in source language",
+          "explanation_translated": "Brief explanation in target language"
         }
       ]
     }

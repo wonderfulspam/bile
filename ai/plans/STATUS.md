@@ -20,9 +20,10 @@
 
 ## 🎯 Next Steps
 
+Performance optimizations. The userscript currently times out when trying to translate and we need to find and fix the issue locally using the new CLI.
+
 Potential future enhancements:
 
 - Additional language support
 - More news site extraction rules
-- Performance optimizations
 - Browser extension version

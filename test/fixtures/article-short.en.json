@@ -1,0 +1,31 @@
+{
+  "source_language": "de",
+  "target_language": "en",
+  "title_original": "Eilmeldung",
+  "title_translated": "Breaking News",
+  "content": [
+    {
+      "type": "paragraph",
+      "original": "Deutsches <slang>Startup</slang> erhält 50 Millionen Euro Finanzierung für revolutionäre KI-Technologie, die die Gesundheitsdiagnostik transformieren könnte.",
+      "translated": "German <slang>Startup</slang> receives 50 million euros in funding for revolutionary AI technology that could transform health diagnostics.",
+      "slang_terms": [
+        {
+          "term": "Startup",
+          "translation": "Startup",
+          "explanation_original": "Ein junges Unternehmen mit innovativen Geschäftsideen, oft in der Technologiebranche",
+          "explanation_translated": "A young company with innovative business ideas, often in the technology sector"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "usage": {
+      "prompt_tokens": 337,
+      "completion_tokens": 229,
+      "total_tokens": 566,
+      "prompt_tokens_details": null
+    },
+    "originalLength": 207,
+    "translatedAt": "2025-08-10T15:26:37.142Z"
+  }
+}

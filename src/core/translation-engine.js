@@ -74,7 +74,12 @@ class BileTranslationEngine {
 
         } catch (error) {
             if (this.debug) {
-                BileConstants.ERROR_HANDLERS.LOG_AND_THROW('Translation', error);
+                // Use local error handler if BileConstants not available
+                if (typeof BileConstants !== 'undefined') {
+                    BileConstants.ERROR_HANDLERS.LOG_AND_THROW('Translation', error);
+                } else if (console && console.error) {
+                    console.error('Translation failed:', error);
+                }
             }
             throw error;
         }

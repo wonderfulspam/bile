@@ -21,7 +21,7 @@ class MockStorage {
     }
 
     async getApiKey() {
-        return this.storage.get('bile_openrouter_api_key') || process.env.BILE_API_KEY || null;
+        return this.storage.get('bile_openrouter_api_key') || process.env.OPENROUTER_API_KEY || null;
     }
 
     async setApiKey(key) {
@@ -62,7 +62,7 @@ class BileCliTester {
             await this.testTranslationEngine();
         } else {
             console.log('⚠️  Skipping Translation Engine tests (no API key)');
-            console.log('   Set BILE_API_KEY environment variable to test API calls\n');
+            console.log('   Set OPENROUTER_API_KEY environment variable to test API calls\n');
         }
 
         this.printSummary();
@@ -179,29 +179,26 @@ class BileCliTester {
         console.log('🌍 Testing Translation Engine...');
         this.testsTotal += 2;
 
-        const apiKey = await this.storage.getApiKey();
-        if (!apiKey) {
-            console.log('⚠️  Skipping - no API key provided\n');
-            return;
-        }
-
         try {
-            const engine = new BileTranslationEngine(apiKey);
-            this.assert(engine !== null, 'Translation engine creation works');
+            // Test with new client architecture
+            const client = BileCoreApiClient.create({ debug: false });
+            const config = await client.getConfig();
+            
+            this.assert(client !== null, 'API client creation works');
+
+            if (!config.hasApiKey) {
+                console.log('⚠️  Skipping API test - no API key provided\n');
+                return;
+            }
 
             // Test with simple content (actual API call)
-            console.log('   Making test API call...');
-            const testContent = {
-                title: 'Hello World',
-                content: [
-                    { type: 'paragraph', text: 'This is a simple test.' }
-                ]
-            };
+            console.log(`   Making test API call with ${config.provider}...`);
+            const testContent = 'This is a simple test sentence.';
 
-            const result = await engine.translateContent(testContent, 'de', { maxRetries: 1 });
+            const result = await client.translate(testContent, 'de');
             this.assert(result !== null, 'Translation API call works', 'Got response from API');
             
-            console.log('   ✅ API call successful!');
+            console.log(`   ✅ API call successful using ${config.provider}!`);
         } catch (error) {
             console.log(`   ❌ API call failed: ${error.message}`);
             this.assert(false, 'Translation API call works', error.message);
@@ -288,7 +285,7 @@ Usage:
   node scripts/test-cli.js # Run all tests directly
   
 Environment Variables:
-  BILE_API_KEY            # OpenRouter API key for translation tests
+  OPENROUTER_API_KEY      # OpenRouter API key for translation tests
 
 Options:
   --help                  # Show this help message
