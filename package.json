@@ -1,7 +1,7 @@
 {
   "name": "bile",
   "version": "3.0.0",
-  "description": "Bilingual Web Page Converter - Transform articles into interactive language learning tools",
+  "description": "Bile - Bilingual Intelligent Learning Experience. Transforms web articles into interactive language learning tools",
   "main": "dist/bile.user.js",
   "scripts": {
     "build": "node scripts/build-userscript.js",

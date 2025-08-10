@@ -225,7 +225,7 @@ if (require.main === module) {
 
             } else {
                 console.log(`
-Bile CLI - Bilingual Web Page Converter
+Bile CLI
 
 Usage:
   bile <url> [options]           Process a webpage URL

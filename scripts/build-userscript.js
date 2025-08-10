@@ -279,7 +279,7 @@ function initializeBile() {
     generateBuildHeader() {
         const timestamp = new Date().toISOString();
         return `/*
- * Bile - Bilingual Web Page Converter
+ * Bile - Bilingual Intelligent Learning Experience
  * Built: ${timestamp}
  * Version: ${this.version}
  *

@@ -4,7 +4,7 @@
  */
 
 const USERSCRIPT_HEADER = `// ==UserScript==
-// @name         Bile - Bilingual Web Page Converter
+// @name         Bile - Bilingual Intelligent Learning Experience
 // @namespace    https://github.com/user/bile
 // @version      3.0.0
 // @description  Convert web articles to bilingual interactive learning tools using cutting-edge AI models

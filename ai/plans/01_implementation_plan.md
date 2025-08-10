@@ -2,7 +2,7 @@
 
 ## Overview
 
-Phase 1 establishes the core infrastructure for the Bile bilingual web page converter. This includes userscript setup, secure API key management, basic API integration with Claude, UI trigger mechanism, and new tab generation.
+Phase 1 establishes the core infrastructure for Bile. This includes userscript setup, secure API key management, basic API integration with Claude, UI trigger mechanism, and new tab generation.
 
 ## Technical Decisions
 

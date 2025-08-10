@@ -107,7 +107,7 @@ class BileCli {
      */
     showHelp() {
         console.log(`
-Bile CLI - Bilingual Web Page Converter
+Bile CLI
 
 Usage:
   bile test                    # Test core functionality
